@@ -33,9 +33,9 @@ const TRANSLATIONS = {
     customSizeLabel: "宽 × 高",
     customSizeHint: "例如 720x1584",
     animSize: "动画大小",
-    playback: "播放次数",
-    playLoop: "循环播放",
-    playOnce: "只播放一次",
+    loopCount: "循环次数",
+    loopTimes: "{count} 次",
+    loopStatus: "循环 {count} 次",
     playbackSpeed: "播放速度",
     position: "位置",
     posDefault: "默认（黄金分割点）",
@@ -128,9 +128,9 @@ const TRANSLATIONS = {
     customSizeLabel: "寬 × 高",
     customSizeHint: "例如 720x1584",
     animSize: "動畫大小",
-    playback: "播放次數",
-    playLoop: "循環播放",
-    playOnce: "只播放一次",
+    loopCount: "循環次數",
+    loopTimes: "{count} 次",
+    loopStatus: "循環 {count} 次",
     playbackSpeed: "播放速度",
     position: "位置",
     posDefault: "預設（黃金分割點）",
@@ -223,9 +223,9 @@ const TRANSLATIONS = {
     customSizeLabel: "Width × height",
     customSizeHint: "e.g. 720x1584",
     animSize: "Animation size",
-    playback: "Playback",
-    playLoop: "Loop",
-    playOnce: "Play once",
+    loopCount: "Loop count",
+    loopTimes: "{count} times",
+    loopStatus: "loops {count} times",
     playbackSpeed: "Playback speed",
     position: "Position",
     posDefault: "Default (golden point)",
@@ -455,7 +455,8 @@ const customSizeRow = document.querySelector("#custom-size-row");
 const customSize = document.querySelector("#custom-size");
 const sizeSlider = document.querySelector("#size-slider");
 const sizeValue = document.querySelector("#size-value");
-const playMode = document.querySelector("#play-mode");
+const loopSlider = document.querySelector("#loop-slider");
+const loopValue = document.querySelector("#loop-value");
 const speedSlider = document.querySelector("#speed-slider");
 const speedValue = document.querySelector("#speed-value");
 const positionMode = document.querySelector("#position-mode");
@@ -542,11 +543,11 @@ function applyStatus(s) {
     const fps = s.fps && s.fps !== "-" ? ` · ${s.fps} fps` : "";
     const box = s.frame_w && s.frame_w !== "-" ? ` · ${s.frame_w}×${s.frame_h}` : "";
     const sizePct = s.size_pct && s.size_pct !== "-" ? ` · ${s.size_pct}%` : "";
-    const play = s.play_count === "1" ? ` · ${t("playOnce")}` : ` · ${t("playLoop")}`;
+    const loop = s.loop_count && s.loop_count !== "-" && Number(s.loop_count) > 1 ? ` · ${t("loopStatus", { count: s.loop_count })}` : "";
     const spd = s.speed_pct && s.speed_pct !== "-" && String(s.speed_pct) !== "100" ? ` · ${formatSpeed(s.speed_pct)}` : "";
     const pos = s.pos_mode === "custom" ? ` · ${s.x_pct}%·${s.y_pct}%` : "";
     const fileSize = s.size && s.size !== "-" ? ` · ${formatBytes(s.size)}` : "";
-    currentStatus.textContent = `${frames}${fps}${box}${sizePct}${spd}${play}${pos}${fileSize}`;
+    currentStatus.textContent = `${frames}${fps}${box}${sizePct}${loop}${spd}${pos}${fileSize}`;
     if (wasConverting && String(s.converting) !== "1") loadPreview();
   } else {
     installedChip.classList.add("hidden");
@@ -647,14 +648,14 @@ async function startConvert() {
     const maxsec = Number(durationSlider.value) || 10;
     const box = sizeMode.value === "custom" ? customSize.value.trim() : "auto";
     const sizePct = Number(sizeSlider.value) || 100;
-    const play = playMode.value === "once" ? "once" : "loop";
+    const loopCount = Number(loopSlider.value) || 1;
     const customPos = positionMode.value === "custom";
     const xPct = customPos ? (Number(xSlider.value) || 50) : 50;
     const yPct = customPos ? (Number(ySlider.value) || 38) : 38;
     const posMode = customPos ? "custom" : "default";
     const speedPct = Number(speedSlider.value) || 100;
     const result = await exec(
-      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)} ${sizePct} ${shellQuote(play)} ${xPct} ${yPct} ${shellQuote(posMode)} ${speedPct}`,
+      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)} ${sizePct} ${loopCount} ${xPct} ${yPct} ${shellQuote(posMode)} ${speedPct}`,
       { timeout: 30000 },
     );
     if (!result.includes("OK started")) throw new Error(result.includes("ERROR busy") ? "busy" : "start_failed");
@@ -824,7 +825,7 @@ function showUploadPreview(fileLike) {
   previewObjectUrl = URL.createObjectURL(fileLike);
   uploadPreviewImg.classList.toggle("hidden", !isGif);
   uploadPreviewVideo.classList.toggle("hidden", isGif);
-  uploadPreviewVideo.loop = playMode.value === "loop";
+  uploadPreviewVideo.loop = Number(loopSlider.value) > 1;
   if (isGif) {
     uploadPreviewImg.src = previewObjectUrl;
   } else {
@@ -894,13 +895,12 @@ function init() {
   });
 
   sizeSlider.addEventListener("input", applyPreviewGeometry);
+  loopSlider.addEventListener("input", () => {
+    loopValue.textContent = t("loopTimes", { count: loopSlider.value });
+    uploadPreviewVideo.loop = Number(loopSlider.value) > 1;
+  });
   speedSlider.addEventListener("input", () => {
     speedValue.textContent = formatSpeed(speedSlider.value);
-  });
-  playMode.addEventListener("change", () => {
-    const loop = playMode.value === "loop";
-    uploadPreviewVideo.loop = loop;
-    if (loop && uploadPreviewVideo.ended) uploadPreviewVideo.play().catch(() => {});
   });
   positionMode.addEventListener("change", () => {
     positionCustomRows.forEach((row) => row.classList.toggle("hidden", positionMode.value !== "custom"));

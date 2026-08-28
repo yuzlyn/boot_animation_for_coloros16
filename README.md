@@ -31,7 +31,7 @@
 - 影片使用 MediaCodec 硬解碼，GIF 使用系統解碼器，無需 ffmpeg。
 - 動畫水平居中，垂直位於上黃金分割點（距頂部約 0.382×畫面高）。
 - 可自訂動畫大小（10–100%），選擇檔案後即時預覽大小與位置。
-- 可設定循環播放或只播放一次。
+- 可設定循環次數（1–10 次），以拼接幀方式確保循環在所有裝置生效。
 - 可調播放速度（0.25–4×）。
 - 可自訂水平與垂直位置，或使用預設的居中上黃金分割點。
 - 可調幀率（10–60 fps）、時長上限與輸出尺寸。
@@ -53,6 +53,7 @@ adb reboot
 ```
 
 ### 版本歷史
+- **v1.7.0** — 循環改為次數設定（1–10 次），以幀拼接實現，不再依賴引擎循環
 - **v1.6.0** — 新增播放速度調節（0.25–4×）；修復 WebUI 預覽（怪異播放按鈕、畫面拉伸、循環失效）
 - **v1.5.0** — 新增自定義水平 / 垂直位置設定；重新排版上傳卡片（按鈕移至下一行右側）
 - **v1.4.0** — 新增動畫大小設定（10–100%）與即時預覽；新增循環 / 單次播放設定
@@ -85,7 +86,7 @@ adb reboot
 - 视频使用 MediaCodec 硬解码，GIF 使用系统解码器，无需 ffmpeg。
 - 动画水平居中，垂直位于上黄金分割点（距顶部约 0.382×画面高）。
 - 可自定义动画大小（10–100%），选择文件后即时预览大小与位置。
-- 可设置循环播放或只播放一次。
+- 可设置循环次数（1–10 次），以拼接帧方式确保循环在所有设备生效。
 - 可调播放速度（0.25–4×）。
 - 可自定义水平与垂直位置，或使用默认的居中上黄金分割点。
 - 可调帧率（10–60 fps）、时长上限与输出尺寸。
@@ -107,6 +108,7 @@ adb reboot
 ```
 
 ### 版本历史
+- **v1.7.0** — 循环改为次数设置（1–10 次），以帧拼接实现，不再依赖引擎循环
 - **v1.6.0** — 新增播放速度调节（0.25–4×）；修复 WebUI 预览（怪异播放按钮、画面拉伸、循环失效）
 - **v1.5.0** — 新增自定义水平 / 垂直位置设置；重新排版上传卡片（按钮移至下一行右侧）
 - **v1.4.0** — 新增动画大小设置（10–100%）与即时预览；新增循环 / 单次播放设置
@@ -139,7 +141,7 @@ A ColorOS / realme UI / OxygenOS boot animation module: upload a video or GIF in
 - MediaCodec hardware decoding for videos and the system decoder for GIFs — no ffmpeg required.
 - Horizontally centered, vertical center at the upper golden-ratio point (~0.382× screen height from the top).
 - Custom animation size (10–100%) with a live size-and-position preview after choosing a file.
-- Loop playback or play once.
+- Set the loop count (1-10); frames are spliced so looping works on every device.
 - Adjustable playback speed (0.25-4×).
 - Custom horizontal and vertical position, or the default centered upper golden-ratio point.
 - Adjustable frame rate (10–60 fps), duration cap, and output size.
@@ -161,6 +163,7 @@ adb reboot
 ```
 
 ### Version history
+- **v1.7.0** — Loop count setting (1-10) via frame splicing, no longer relying on engine looping
 - **v1.6.0** — Playback speed setting (0.25-4×); WebUI preview fixes (odd play button, stretched image, broken loop)
 - **v1.5.0** — Custom horizontal / vertical position setting; upload card re-layout (button on its own row, right-aligned)
 - **v1.4.0** — Animation size setting (10-100%) with live preview; loop / play-once playback
