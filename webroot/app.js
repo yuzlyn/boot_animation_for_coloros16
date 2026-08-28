@@ -36,6 +36,11 @@ const TRANSLATIONS = {
     playback: "播放次数",
     playLoop: "循环播放",
     playOnce: "只播放一次",
+    position: "位置",
+    posDefault: "默认（黄金分割点）",
+    posCustom: "自定义",
+    posX: "水平位置",
+    posY: "垂直位置",
     previewHint: "预览：动画将以所选大小显示在上黄金分割点",
     convertingLabel: "转换进度",
     startConvert: "开始转换",
@@ -125,6 +130,11 @@ const TRANSLATIONS = {
     playback: "播放次數",
     playLoop: "循環播放",
     playOnce: "只播放一次",
+    position: "位置",
+    posDefault: "預設（黃金分割點）",
+    posCustom: "自訂",
+    posX: "水平位置",
+    posY: "垂直位置",
     previewHint: "預覽：動畫將以所選大小顯示於上黃金分割點",
     convertingLabel: "轉換進度",
     startConvert: "開始轉換",
@@ -214,6 +224,11 @@ const TRANSLATIONS = {
     playback: "Playback",
     playLoop: "Loop",
     playOnce: "Play once",
+    position: "Position",
+    posDefault: "Default (golden point)",
+    posCustom: "Custom",
+    posX: "Horizontal position",
+    posY: "Vertical position",
     previewHint: "Preview: the animation appears at the chosen size on the upper golden-ratio point",
     convertingLabel: "Conversion progress",
     startConvert: "Start conversion",
@@ -432,6 +447,12 @@ const customSize = document.querySelector("#custom-size");
 const sizeSlider = document.querySelector("#size-slider");
 const sizeValue = document.querySelector("#size-value");
 const playMode = document.querySelector("#play-mode");
+const positionMode = document.querySelector("#position-mode");
+const xSlider = document.querySelector("#x-slider");
+const xValue = document.querySelector("#x-value");
+const ySlider = document.querySelector("#y-slider");
+const yValue = document.querySelector("#y-value");
+const positionCustomRows = document.querySelectorAll(".position-custom-row");
 const uploadPreviewWrap = document.querySelector("#upload-preview-wrap");
 const uploadPreviewScreen = document.querySelector("#upload-preview-screen");
 const uploadPreviewSlot = document.querySelector("#upload-preview-slot");
@@ -509,8 +530,9 @@ function applyStatus(s) {
     const box = s.frame_w && s.frame_w !== "-" ? ` · ${s.frame_w}×${s.frame_h}` : "";
     const sizePct = s.size_pct && s.size_pct !== "-" ? ` · ${s.size_pct}%` : "";
     const play = s.play_count === "1" ? ` · ${t("playOnce")}` : ` · ${t("playLoop")}`;
+    const pos = s.pos_mode === "custom" ? ` · ${s.x_pct}%·${s.y_pct}%` : "";
     const fileSize = s.size && s.size !== "-" ? ` · ${formatBytes(s.size)}` : "";
-    currentStatus.textContent = `${frames}${fps}${box}${sizePct}${play}${fileSize}`;
+    currentStatus.textContent = `${frames}${fps}${box}${sizePct}${play}${pos}${fileSize}`;
     if (wasConverting && String(s.converting) !== "1") loadPreview();
   } else {
     installedChip.classList.add("hidden");
@@ -612,8 +634,12 @@ async function startConvert() {
     const box = sizeMode.value === "custom" ? customSize.value.trim() : "auto";
     const sizePct = Number(sizeSlider.value) || 100;
     const play = playMode.value === "once" ? "once" : "loop";
+    const customPos = positionMode.value === "custom";
+    const xPct = customPos ? (Number(xSlider.value) || 50) : 50;
+    const yPct = customPos ? (Number(ySlider.value) || 38) : 38;
+    const posMode = customPos ? "custom" : "default";
     const result = await exec(
-      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)} ${sizePct} ${shellQuote(play)}`,
+      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)} ${sizePct} ${shellQuote(play)} ${xPct} ${yPct} ${shellQuote(posMode)}`,
       { timeout: 30000 },
     );
     if (!result.includes("OK started")) throw new Error(result.includes("ERROR busy") ? "busy" : "start_failed");
@@ -745,6 +771,13 @@ function applyPreviewGeometry() {
   const pct = Number(sizeSlider.value) || 100;
   sizeValue.textContent = `${pct}%`;
   uploadPreviewSlot.style.width = `${pct}%`;
+  const custom = positionMode.value === "custom";
+  const x = custom ? (Number(xSlider.value) || 50) : 50;
+  const y = custom ? (Number(ySlider.value) || 38) : 38;
+  xValue.textContent = `${x}%`;
+  yValue.textContent = `${y}%`;
+  uploadPreviewSlot.style.left = `${x}%`;
+  uploadPreviewSlot.style.top = `${y}%`;
 }
 
 function onPreviewMediaLoaded(w, h) {
@@ -831,6 +864,12 @@ function init() {
   playMode.addEventListener("change", () => {
     uploadPreviewVideo.loop = playMode.value === "loop";
   });
+  positionMode.addEventListener("change", () => {
+    positionCustomRows.forEach((row) => row.classList.toggle("hidden", positionMode.value !== "custom"));
+    applyPreviewGeometry();
+  });
+  xSlider.addEventListener("input", applyPreviewGeometry);
+  ySlider.addEventListener("input", applyPreviewGeometry);
   uploadPreviewImg.addEventListener("load", () => {
     onPreviewMediaLoaded(uploadPreviewImg.naturalWidth, uploadPreviewImg.naturalHeight);
   });

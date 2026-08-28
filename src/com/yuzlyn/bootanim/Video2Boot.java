@@ -33,21 +33,21 @@ import java.util.zip.ZipOutputStream;
  *
  * Usage: app_process ... com.yuzlyn.bootanim.Video2Boot \
  *        <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> \
- *        [sizePct] [playCount]
+ *        [sizePct] [playCount] [xPct] [yPct]
  *
  * sizePct (10-100, default 100) scales the animation inside the frame box;
  * playCount (0=loop, 1=play once, default 0) is written to desc.txt.
+ * xPct / yPct (0-100, defaults 50 / 38) place the animation center on the
+ * canvas: 50 = horizontal center, 38 ≈ upper golden-ratio point (H/φ²).
  * Videos are decoded with MediaCodec (hardware surface preferred), animated
  * GIFs with android.graphics.Movie (Skia GIF codec). Every frame is scaled
  * to fit inside the frame box (aspect preserved) and composited on a black
- * canvas: horizontally centered, vertical center on the upper golden-ratio
- * point (H/φ² ≈ 0.382H from the top).
+ * canvas.
  */
 public class Video2Boot {
 
     private static final int MAX_FRAMES = 480;
     private static final int JPEG_QUALITY = 80;
-    private static final double PHI = 1.618033988749895;
 
     public static void main(String[] args) {
         int code = 0;
@@ -62,7 +62,7 @@ public class Video2Boot {
 
     private static int run(String[] args) throws Exception {
         if (args.length < 6) {
-            System.err.println("usage: <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> [sizePct] [playCount]");
+            System.err.println("usage: <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> [sizePct] [playCount] [xPct] [yPct]");
             return 2;
         }
         File input = new File(args[0]);
@@ -73,10 +73,13 @@ public class Video2Boot {
         int frameH = even(parseInt(args[5], 1584), 16);
         int sizePct = clamp(parseInt(args.length > 6 ? args[6] : "100", 100), 10, 100);
         int playCount = clamp(parseInt(args.length > 7 ? args[7] : "0", 0), 0, 1);
+        int xPct = clamp(parseInt(args.length > 8 ? args[8] : "50", 50), 0, 100);
+        int yPct = clamp(parseInt(args.length > 9 ? args[9] : "38", 38), 0, 100);
 
         System.out.println("INFO input=" + input.getAbsolutePath());
         System.out.println("INFO frame=" + frameW + "x" + frameH + " fps=" + fps + " maxSeconds=" + maxSeconds
-                + " sizePct=" + sizePct + " playCount=" + playCount);
+                + " sizePct=" + sizePct + " playCount=" + playCount
+                + " pos=" + xPct + "%," + yPct + "%");
         System.out.println("PROGRESS 1");
 
         File workDir = new File(output.getParentFile(), ".convert-" + System.currentTimeMillis());
@@ -86,11 +89,11 @@ public class Video2Boot {
 
         int frameCount;
         if (isGifFile(input)) {
-            GifDecoder gd = new GifDecoder(input, fps, maxSeconds, frameW, frameH, sizePct, frameDir);
+            GifDecoder gd = new GifDecoder(input, fps, maxSeconds, frameW, frameH, sizePct, xPct, yPct, frameDir);
             gd.decode();
             frameCount = gd.frameCount;
         } else {
-            Decoder dec = new Decoder(input, fps, maxSeconds, frameW, frameH, sizePct, frameDir);
+            Decoder dec = new Decoder(input, fps, maxSeconds, frameW, frameH, sizePct, xPct, yPct, frameDir);
             dec.decode();
             frameCount = dec.frameCount;
         }
@@ -202,11 +205,10 @@ public class Video2Boot {
     }
 
     /**
-     * 合成到黑底畫布：水平居中，垂直中心對齊上黃金分割點
-     * （距頂部 H/φ² ≈ 0.382H，貼邊時自動收斂以免超出畫布）。
-     * sizePct 控制動畫在畫布內的大小（10-100，100=鋪滿）。
+     * 合成到黑底畫布：動畫中心位於 (xPct%, yPct%) 畫布位置，
+     * 貼邊時自動收斂以免超出畫布。sizePct 控制動畫大小（10-100，100=鋪滿）。
      */
-    static Bitmap placeFrame(Bitmap b, int frameW, int frameH, int sizePct) {
+    static Bitmap placeFrame(Bitmap b, int frameW, int frameH, int sizePct, int xPct, int yPct) {
         Bitmap out = Bitmap.createBitmap(frameW, frameH, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
         c.drawColor(Color.BLACK);
@@ -214,8 +216,10 @@ public class Video2Boot {
                 * (sizePct / 100f);
         int dw = Math.max(1, (int) (b.getWidth() * scale));
         int dh = Math.max(1, (int) (b.getHeight() * scale));
-        int left = (frameW - dw) / 2;
-        int top = (int) Math.round(frameH / (PHI * PHI)) - dh / 2;
+        int left = (int) Math.round(frameW * (xPct / 100.0)) - dw / 2;
+        int top = (int) Math.round(frameH * (yPct / 100.0)) - dh / 2;
+        if (left < 0) left = 0;
+        if (left > frameW - dw) left = frameW - dw;
         if (top < 0) top = 0;
         if (top > frameH - dh) top = frameH - dh;
         Paint p = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
@@ -237,17 +241,20 @@ public class Video2Boot {
         final int maxSeconds;
         final int frameW, frameH;
         final int sizePct;
+        final int xPct, yPct;
         final File frameDir;
         int frameCount = 0;
         int rotation = 0;
 
-        Decoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, File frameDir) {
+        Decoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, int xPct, int yPct, File frameDir) {
             this.input = input;
             this.fps = fps;
             this.maxSeconds = maxSeconds;
             this.frameW = frameW;
             this.frameH = frameH;
             this.sizePct = sizePct;
+            this.xPct = xPct;
+            this.yPct = yPct;
             this.frameDir = frameDir;
         }
 
@@ -341,7 +348,7 @@ public class Video2Boot {
                                             b.recycle();
                                             b = r;
                                         }
-                                        Bitmap framed = placeFrame(b, frameW, frameH, sizePct);
+                                        Bitmap framed = placeFrame(b, frameW, frameH, sizePct, xPct, yPct);
                                         b.recycle();
                                         File out = new File(frameDir, String.format("%04d.jpg", frameCount + 1));
                                         writeJpeg(framed, out);
@@ -424,7 +431,7 @@ public class Video2Boot {
                                         b.recycle();
                                         b = r;
                                     }
-                                    Bitmap framed = placeFrame(b, frameW, frameH, sizePct);
+                                    Bitmap framed = placeFrame(b, frameW, frameH, sizePct, xPct, yPct);
                                     b.recycle();
                                     File out = new File(frameDir, String.format("%04d.jpg", frameCount + 1));
                                     writeJpeg(framed, out);
@@ -616,16 +623,19 @@ public class Video2Boot {
         final int maxSeconds;
         final int frameW, frameH;
         final int sizePct;
+        final int xPct, yPct;
         final File frameDir;
         int frameCount = 0;
 
-        GifDecoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, File frameDir) {
+        GifDecoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, int xPct, int yPct, File frameDir) {
             this.input = input;
             this.fps = fps;
             this.maxSeconds = maxSeconds;
             this.frameW = frameW;
             this.frameH = frameH;
             this.sizePct = sizePct;
+            this.xPct = xPct;
+            this.yPct = yPct;
             this.frameDir = frameDir;
         }
 
@@ -647,7 +657,7 @@ public class Video2Boot {
                 c.drawColor(Color.BLACK);
                 movie.setTime(t);
                 movie.draw(c, 0f, 0f);
-                Bitmap framed = placeFrame(b, frameW, frameH, sizePct);
+                Bitmap framed = placeFrame(b, frameW, frameH, sizePct, xPct, yPct);
                 b.recycle();
                 writeJpeg(framed, new File(frameDir, String.format("%04d.jpg", frameCount + 1)));
                 framed.recycle();

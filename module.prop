@@ -1,6 +1,6 @@
 id=coloros-bootanimation
 name=開機動畫 for ColorOS
-version=v1.4.0
-versionCode=140
+version=v1.5.0
+versionCode=150
 author=yuzlyn
 description=適用於 ColorOS / realme UI / OxygenOS 的開機動畫模塊：在 KernelSU 或 Magisk 的 WebUI 上傳影片或 GIF，自動轉換為水平居中、位於上黃金分割點的開機動畫（MediaCodec 硬解碼，無需 ffmpeg）。WebUI 支援繁中 / 簡中 / 英文。重啟後生效。

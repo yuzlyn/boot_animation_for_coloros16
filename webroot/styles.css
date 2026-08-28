@@ -283,6 +283,20 @@ h2 {
   grid-area: action;
 }
 
+/* 上傳卡片：按鈕移到下一行右側，描述文字不再被擠窄 */
+.list-item.upload-item {
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-areas:
+    "icon copy"
+    ". action";
+  align-content: center;
+  row-gap: 6px;
+}
+
+.list-item.upload-item .select-button {
+  justify-self: end;
+}
+
 /* 上傳選項 */
 .option-grid {
   display: grid;
