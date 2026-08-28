@@ -641,16 +641,16 @@ footer {
 
 .upload-preview-slot {
   position: absolute;
-  top: 38.2%;
-  left: 50%;
-  width: 100%;
-  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
 .upload-preview-media {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
 }
 
 .upload-preview-hint {

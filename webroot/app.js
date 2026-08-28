@@ -36,6 +36,7 @@ const TRANSLATIONS = {
     playback: "播放次数",
     playLoop: "循环播放",
     playOnce: "只播放一次",
+    playbackSpeed: "播放速度",
     position: "位置",
     posDefault: "默认（黄金分割点）",
     posCustom: "自定义",
@@ -130,6 +131,7 @@ const TRANSLATIONS = {
     playback: "播放次數",
     playLoop: "循環播放",
     playOnce: "只播放一次",
+    playbackSpeed: "播放速度",
     position: "位置",
     posDefault: "預設（黃金分割點）",
     posCustom: "自訂",
@@ -224,6 +226,7 @@ const TRANSLATIONS = {
     playback: "Playback",
     playLoop: "Loop",
     playOnce: "Play once",
+    playbackSpeed: "Playback speed",
     position: "Position",
     posDefault: "Default (golden point)",
     posCustom: "Custom",
@@ -414,6 +417,12 @@ function formatBytes(bytes) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatSpeed(pct) {
+  const n = Number(pct) / 100;
+  const text = Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+  return `${text}×`;
+}
+
 function shellQuote(value) {
   return `'${String(value).replaceAll("'", `'\\''`)}'`;
 }
@@ -447,6 +456,8 @@ const customSize = document.querySelector("#custom-size");
 const sizeSlider = document.querySelector("#size-slider");
 const sizeValue = document.querySelector("#size-value");
 const playMode = document.querySelector("#play-mode");
+const speedSlider = document.querySelector("#speed-slider");
+const speedValue = document.querySelector("#speed-value");
 const positionMode = document.querySelector("#position-mode");
 const xSlider = document.querySelector("#x-slider");
 const xValue = document.querySelector("#x-value");
@@ -478,6 +489,8 @@ let pollTimer = 0;
 let titleAnimationFrame = 0;
 let wasConverting = false;
 let previewObjectUrl = null;
+let previewScreenPx = { w: 0, h: 0 };
+let mediaAspect = 0;
 
 async function refreshStatus() {
   let status = {};
@@ -530,9 +543,10 @@ function applyStatus(s) {
     const box = s.frame_w && s.frame_w !== "-" ? ` · ${s.frame_w}×${s.frame_h}` : "";
     const sizePct = s.size_pct && s.size_pct !== "-" ? ` · ${s.size_pct}%` : "";
     const play = s.play_count === "1" ? ` · ${t("playOnce")}` : ` · ${t("playLoop")}`;
+    const spd = s.speed_pct && s.speed_pct !== "-" && String(s.speed_pct) !== "100" ? ` · ${formatSpeed(s.speed_pct)}` : "";
     const pos = s.pos_mode === "custom" ? ` · ${s.x_pct}%·${s.y_pct}%` : "";
     const fileSize = s.size && s.size !== "-" ? ` · ${formatBytes(s.size)}` : "";
-    currentStatus.textContent = `${frames}${fps}${box}${sizePct}${play}${pos}${fileSize}`;
+    currentStatus.textContent = `${frames}${fps}${box}${sizePct}${spd}${play}${pos}${fileSize}`;
     if (wasConverting && String(s.converting) !== "1") loadPreview();
   } else {
     installedChip.classList.add("hidden");
@@ -638,8 +652,9 @@ async function startConvert() {
     const xPct = customPos ? (Number(xSlider.value) || 50) : 50;
     const yPct = customPos ? (Number(ySlider.value) || 38) : 38;
     const posMode = customPos ? "custom" : "default";
+    const speedPct = Number(speedSlider.value) || 100;
     const result = await exec(
-      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)} ${sizePct} ${shellQuote(play)} ${xPct} ${yPct} ${shellQuote(posMode)}`,
+      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)} ${sizePct} ${shellQuote(play)} ${xPct} ${yPct} ${shellQuote(posMode)} ${speedPct}`,
       { timeout: 30000 },
     );
     if (!result.includes("OK started")) throw new Error(result.includes("ERROR busy") ? "busy" : "start_failed");
@@ -744,8 +759,10 @@ async function importFromPath(rawPath) {
 }
 
 function clearUploadPreview() {
+  try { uploadPreviewVideo.pause(); } catch { /* ignore */ }
   uploadPreviewImg.removeAttribute("src");
   uploadPreviewVideo.removeAttribute("src");
+  mediaAspect = 0;
   if (previewObjectUrl) {
     URL.revokeObjectURL(previewObjectUrl);
     previewObjectUrl = null;
@@ -763,25 +780,37 @@ function updatePreviewScreenSize(swRaw, shRaw) {
   const maxW = 200;
   let w = maxW;
   if ((w * sh) / sw > maxH) w = Math.max(48, Math.floor((maxH * sw) / sh));
+  const h = Math.round((w * sh) / sw);
+  previewScreenPx.w = w;
+  previewScreenPx.h = h;
   uploadPreviewScreen.style.width = `${w}px`;
-  uploadPreviewScreen.style.aspectRatio = `${sw} / ${sh}`;
+  uploadPreviewScreen.style.height = `${h}px`;
+  applyPreviewGeometry();
 }
 
 function applyPreviewGeometry() {
   const pct = Number(sizeSlider.value) || 100;
   sizeValue.textContent = `${pct}%`;
-  uploadPreviewSlot.style.width = `${pct}%`;
   const custom = positionMode.value === "custom";
   const x = custom ? (Number(xSlider.value) || 50) : 50;
   const y = custom ? (Number(ySlider.value) || 38) : 38;
   xValue.textContent = `${x}%`;
   yValue.textContent = `${y}%`;
-  uploadPreviewSlot.style.left = `${x}%`;
-  uploadPreviewSlot.style.top = `${y}%`;
+  const { w: sw, h: sh } = previewScreenPx;
+  if (sw <= 0 || sh <= 0) return;
+  const mw = Math.max(1, Math.round((sw * pct) / 100));
+  const mh = Math.max(1, Math.round(mediaAspect > 0 ? mw / mediaAspect : (mw * 3) / 4));
+  uploadPreviewSlot.style.width = `${mw}px`;
+  uploadPreviewSlot.style.height = `${mh}px`;
+  uploadPreviewSlot.style.left = `${Math.round((sw * x) / 100 - mw / 2)}px`;
+  uploadPreviewSlot.style.top = `${Math.round((sh * y) / 100 - mh / 2)}px`;
 }
 
 function onPreviewMediaLoaded(w, h) {
-  if (w > 0 && h > 0) uploadPreviewSlot.style.aspectRatio = `${w} / ${h}`;
+  if (w > 0 && h > 0) {
+    mediaAspect = w / h;
+    applyPreviewGeometry();
+  }
 }
 
 function showUploadPreview(fileLike) {
@@ -793,11 +822,15 @@ function showUploadPreview(fileLike) {
   const lower = (fileLike.name || "").toLowerCase();
   const isGif = lower.endsWith(".gif");
   previewObjectUrl = URL.createObjectURL(fileLike);
-  uploadPreviewImg.hidden = !isGif;
-  uploadPreviewVideo.hidden = isGif;
+  uploadPreviewImg.classList.toggle("hidden", !isGif);
+  uploadPreviewVideo.classList.toggle("hidden", isGif);
   uploadPreviewVideo.loop = playMode.value === "loop";
-  if (isGif) uploadPreviewImg.src = previewObjectUrl;
-  else uploadPreviewVideo.src = previewObjectUrl;
+  if (isGif) {
+    uploadPreviewImg.src = previewObjectUrl;
+  } else {
+    uploadPreviewVideo.src = previewObjectUrl;
+    uploadPreviewVideo.play().catch(() => {});
+  }
   setUploadPreviewVisible(true);
   applyPreviewGeometry();
 }
@@ -861,8 +894,13 @@ function init() {
   });
 
   sizeSlider.addEventListener("input", applyPreviewGeometry);
+  speedSlider.addEventListener("input", () => {
+    speedValue.textContent = formatSpeed(speedSlider.value);
+  });
   playMode.addEventListener("change", () => {
-    uploadPreviewVideo.loop = playMode.value === "loop";
+    const loop = playMode.value === "loop";
+    uploadPreviewVideo.loop = loop;
+    if (loop && uploadPreviewVideo.ended) uploadPreviewVideo.play().catch(() => {});
   });
   positionMode.addEventListener("change", () => {
     positionCustomRows.forEach((row) => row.classList.toggle("hidden", positionMode.value !== "custom"));

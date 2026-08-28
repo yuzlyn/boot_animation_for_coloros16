@@ -7,11 +7,11 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>開機動畫 for ColorOS</title>
     <link rel="stylesheet" href="vendor/mdui.css">
-    <link rel="stylesheet" href="styles.css?v=150">
+    <link rel="stylesheet" href="styles.css?v=160">
     <script src="vendor/mdui.global.js"></script>
     <script src="vendor/material-kolor.js"></script>
-    <script src="theme-cache.js?v=150"></script>
-    <script src="app.js?v=150" defer></script>
+    <script src="theme-cache.js?v=160"></script>
+    <script src="app.js?v=160" defer></script>
   </head>
   <body>
     <mdui-top-app-bar variant="small" scroll-behavior="elevate">
@@ -135,6 +135,13 @@
               </div>
             </div>
             <div class="option-row">
+              <span data-i18n="playbackSpeed">播放速度</span>
+              <div class="option-control">
+                <input id="speed-slider" type="range" min="25" max="400" step="25" value="100" aria-label="播放速度" data-i18n-aria-label="playbackSpeed">
+                <strong id="speed-value">1×</strong>
+              </div>
+            </div>
+            <div class="option-row">
               <span data-i18n="position">位置</span>
               <div class="option-control">
                 <mdui-segmented-button-group id="position-mode" selects="single" value="default">
@@ -162,8 +169,8 @@
           <div id="upload-preview-wrap" class="upload-preview-wrap hidden">
             <div id="upload-preview-screen" class="upload-preview-screen">
               <div id="upload-preview-slot" class="upload-preview-slot">
-                <img id="upload-preview-img" class="upload-preview-media" alt="開機動畫預覽" data-i18n-alt="previewAlt" hidden>
-                <video id="upload-preview-video" class="upload-preview-media" muted playsinline preload="metadata" hidden></video>
+                <img id="upload-preview-img" class="upload-preview-media hidden" alt="開機動畫預覽" data-i18n-alt="previewAlt">
+                <video id="upload-preview-video" class="upload-preview-media hidden" muted playsinline autoplay preload="auto"></video>
               </div>
             </div>
             <p class="upload-preview-hint" data-i18n="previewHint">預覽：動畫將以所選大小顯示於上黃金分割點</p>
@@ -255,7 +262,7 @@
       </a>
 
       <footer aria-label="版本信息" data-i18n-aria-label="versionInfo">
-        <span>v1.5.0</span>
+        <span>v1.6.0</span>
         <span aria-hidden="true">·</span>
         <span>yuzlyn</span>
       </footer>

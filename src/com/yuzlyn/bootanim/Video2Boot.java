@@ -33,12 +33,14 @@ import java.util.zip.ZipOutputStream;
  *
  * Usage: app_process ... com.yuzlyn.bootanim.Video2Boot \
  *        <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> \
- *        [sizePct] [playCount] [xPct] [yPct]
+ *        [sizePct] [playCount] [xPct] [yPct] [speedPct]
  *
  * sizePct (10-100, default 100) scales the animation inside the frame box;
  * playCount (0=loop, 1=play once, default 0) is written to desc.txt.
  * xPct / yPct (0-100, defaults 50 / 38) place the animation center on the
  * canvas: 50 = horizontal center, 38 ≈ upper golden-ratio point (H/φ²).
+ * speedPct (25-400, default 100) scales the desc.txt fps, so the animation
+ * plays back at speedPct/100 × speed with the same sampled frames.
  * Videos are decoded with MediaCodec (hardware surface preferred), animated
  * GIFs with android.graphics.Movie (Skia GIF codec). Every frame is scaled
  * to fit inside the frame box (aspect preserved) and composited on a black
@@ -62,7 +64,7 @@ public class Video2Boot {
 
     private static int run(String[] args) throws Exception {
         if (args.length < 6) {
-            System.err.println("usage: <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> [sizePct] [playCount] [xPct] [yPct]");
+            System.err.println("usage: <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> [sizePct] [playCount] [xPct] [yPct] [speedPct]");
             return 2;
         }
         File input = new File(args[0]);
@@ -75,11 +77,12 @@ public class Video2Boot {
         int playCount = clamp(parseInt(args.length > 7 ? args[7] : "0", 0), 0, 1);
         int xPct = clamp(parseInt(args.length > 8 ? args[8] : "50", 50), 0, 100);
         int yPct = clamp(parseInt(args.length > 9 ? args[9] : "38", 38), 0, 100);
+        int speedPct = clamp(parseInt(args.length > 10 ? args[10] : "100", 100), 25, 400);
 
         System.out.println("INFO input=" + input.getAbsolutePath());
         System.out.println("INFO frame=" + frameW + "x" + frameH + " fps=" + fps + " maxSeconds=" + maxSeconds
                 + " sizePct=" + sizePct + " playCount=" + playCount
-                + " pos=" + xPct + "%," + yPct + "%");
+                + " pos=" + xPct + "%," + yPct + "% speed=" + speedPct + "%");
         System.out.println("PROGRESS 1");
 
         File workDir = new File(output.getParentFile(), ".convert-" + System.currentTimeMillis());
@@ -101,19 +104,20 @@ public class Video2Boot {
         System.out.println("PROGRESS 88");
         System.out.println("INFO frames=" + frameCount);
 
-        writeZip(output, frameW, frameH, fps, frameDir, frameCount, playCount);
+        writeZip(output, frameW, frameH, fps, frameDir, frameCount, playCount, speedPct);
         deleteRecursive(workDir);
         System.out.println("PROGRESS 100");
         System.out.println("OK " + frameCount + " " + output.length());
         return 0;
     }
 
-    private static void writeZip(File output, int w, int h, int fps, File frameDir, int frameCount, int playCount) throws IOException {
+    private static void writeZip(File output, int w, int h, int fps, File frameDir, int frameCount, int playCount, int speedPct) throws IOException {
         File tmp = new File(output.getParentFile(), output.getName() + ".tmp");
         ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tmp));
         zos.setLevel(0);
 
-        byte[] desc = String.format("g %d %d 0 0 %d\np %d 0 part0\n", w, h, fps, playCount).getBytes("UTF-8");
+        int descFps = clamp((int) Math.round(fps * (speedPct / 100.0)), 1, 120);
+        byte[] desc = String.format("g %d %d 0 0 %d\np %d 0 part0\n", w, h, descFps, playCount).getBytes("UTF-8");
         putStored(zos, "desc.txt", desc);
 
         // directory entries mirror the layout of stock ColorOS zips

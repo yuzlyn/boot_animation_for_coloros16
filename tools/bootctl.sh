@@ -2,7 +2,7 @@
 # bootctl.sh - 開機動畫 for ColorOS 控制腳本
 # 用法:
 #   bootctl status                    輸出 key=value 狀態（供 WebUI 讀取）
-#   bootctl convert <video|gif> <fps> <maxsec> [WxH|auto] [sizePct] [loop|once] [xPct] [yPct] [default|custom]
+#   bootctl convert <video|gif> <fps> <maxsec> [WxH|auto] [sizePct] [loop|once] [xPct] [yPct] [default|custom] [speedPct]
 #                                     異步轉換影片/GIF 為開機動畫
 #   bootctl restore                   恢復系統默認開機動畫
 
@@ -63,11 +63,11 @@ compute_frame_box() {
 }
 
 run_converter() {
-  # run_converter <video> <outzip> <fps> <maxsec> <W> <H> <sizePct> <playCount> <xPct> <yPct>
-  local video="$1" out="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" playcount="$8" x="$9" y="${10}"
+  # run_converter <video> <outzip> <fps> <maxsec> <W> <H> <sizePct> <playCount> <xPct> <yPct> <speedPct>
+  local video="$1" out="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" playcount="$8" x="$9" y="${10}" speed="${11}"
   app_process -Djava.class.path="$JAR" /system/bin \
     com.yuzlyn.bootanim.Video2Boot \
-    "$video" "$out" "$fps" "$maxsec" "$W" "$H" "$size" "$playcount" "$x" "$y" 2>&1
+    "$video" "$out" "$fps" "$maxsec" "$W" "$H" "$size" "$playcount" "$x" "$y" "$speed" 2>&1
 }
 
 cmd_status() {
@@ -94,6 +94,7 @@ cmd_status() {
   xp="$(get_status x_pct)"; [ -z "$xp" ] && xp=50
   yp="$(get_status y_pct)"; [ -z "$yp" ] && yp=38
   pm="$(get_status pos_mode)"; [ -z "$pm" ] && pm=default
+  spd="$(get_status speed_pct)"; [ -z "$spd" ] && spd=100
 
   # 若轉換進程已死但標記還在，重置標記
   if [ "$conv" = "1" ]; then
@@ -121,6 +122,7 @@ play_count=$pc
 x_pct=$xp
 y_pct=$yp
 pos_mode=$pm
+speed_pct=$spd
 screen_w=$sw
 screen_h=$sh
 preview=$([ -f "$PREVIEW" ] && echo 1 || echo 0)
@@ -129,7 +131,7 @@ EOF
 }
 
 cmd_convert() {
-  local video="$1" fps="$2" maxsec="$3" box="$4" size="$5" play="$6" x="$7" y="$8" posmode="$9"
+  local video="$1" fps="$2" maxsec="$3" box="$4" size="$5" play="$6" x="$7" y="$8" posmode="$9" speed="${10}"
   local screen sw sh bw bh bgpid frame playcount
 
   [ -f "$video" ] || { echo "ERROR video_not_found"; exit 1; }
@@ -147,6 +149,9 @@ cmd_convert() {
   case "$y" in ''|*[!0-9]*) y=38 ;; esac
   [ "$y" -lt 0 ] && y=0; [ "$y" -gt 100 ] && y=100
   case "$posmode" in custom) ;; *) posmode=default ;; esac
+  case "$speed" in ''|*[!0-9]*) speed=100 ;; esac
+  [ "$speed" -lt 25 ] && speed=25
+  [ "$speed" -gt 400 ] && speed=400
 
   # 已有轉換在跑
   if [ "$(get_status converting)" = "1" ]; then
@@ -183,7 +188,7 @@ cmd_convert() {
   set_status error ""
   set_status pid ""
 
-  log "convert start: video=$video fps=$fps maxsec=$maxsec frame=$frame size=$size playcount=$playcount pos=$x,$y mode=$posmode screen=${sw}x${sh}"
+  log "convert start: video=$video fps=$fps maxsec=$maxsec frame=$frame size=$size playcount=$playcount pos=$x,$y mode=$posmode speed=$speed screen=${sw}x${sh}"
 
   local outdir="$DATA/.work"
   rm -rf "$outdir" 2>/dev/null
@@ -191,7 +196,7 @@ cmd_convert() {
   local tmpzip="$outdir/result.zip"
 
   # 後台執行，輸出重定向避免阻塞 CGI 回包
-  nohup sh "$0" _do_convert "$video" "$tmpzip" "$fps" "$maxsec" $frame "$size" "$playcount" "$x" "$y" "$posmode" \
+  nohup sh "$0" _do_convert "$video" "$tmpzip" "$fps" "$maxsec" $frame "$size" "$playcount" "$x" "$y" "$posmode" "$speed" \
     >> "$outdir/run.log" 2>&1 &
   bgpid=$!
   set_status pid "$bgpid"
@@ -199,14 +204,14 @@ cmd_convert() {
 }
 
 cmd_do_convert() {
-  local video="$1" tmpzip="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" playcount="$8" x="$9" y="${10}" posmode="${11}"
+  local video="$1" tmpzip="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" playcount="$8" x="$9" y="${10}" posmode="${11}" speed="${12}"
   local outfile outcode frames cpid limit
 
   outfile="$DATA/.work/out.txt"
   : > "$outfile" 2>/dev/null
 
   # 前台啟動轉換器，輸出寫檔；後台循環同步進度到 status
-  run_converter "$video" "$tmpzip" "$fps" "$maxsec" "$W" "$H" "$size" "$playcount" "$x" "$y" \
+  run_converter "$video" "$tmpzip" "$fps" "$maxsec" "$W" "$H" "$size" "$playcount" "$x" "$y" "$speed" \
     > "$outfile" 2>&1 &
   cpid=$!
   limit=$(( maxsec * 2 + 180 ))
@@ -275,6 +280,7 @@ cmd_do_convert() {
   set_status x_pct "$x"
   set_status y_pct "$y"
   set_status pos_mode "$posmode"
+  set_status speed_pct "$speed"
   set_status progress 100
   set_status error ""
   set_status converting 0
