@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-TW" class="mdui-theme-auto">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>開機動畫 for ColorOS</title>
+    <link rel="stylesheet" href="vendor/mdui.css">
+    <link rel="stylesheet" href="styles.css?v=130">
+    <script src="vendor/mdui.global.js"></script>
+    <script src="vendor/material-kolor.js"></script>
+    <script src="theme-cache.js?v=130"></script>
+    <script src="app.js?v=130" defer></script>
+  </head>
+  <body>
+    <mdui-top-app-bar variant="small" scroll-behavior="elevate">
+      <mdui-button-icon id="back-button" aria-label="返回" title="返回" data-i18n-aria-label="back" data-i18n-title="back">
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2Z"></path>
+        </svg>
+      </mdui-button-icon>
+      <mdui-top-app-bar-title id="compact-title" aria-hidden="true" data-i18n="pageTitle">開機動畫 for ColorOS</mdui-top-app-bar-title>
+      <mdui-button-icon id="refresh-button" aria-label="刷新" title="刷新" data-i18n-aria-label="refresh" data-i18n-title="refresh">
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.9 9h-2.03A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z"></path>
+        </svg>
+      </mdui-button-icon>
+    </mdui-top-app-bar>
+
+    <main>
+      <header class="large-title" aria-labelledby="page-title">
+        <h1 id="page-title" data-i18n="pageTitle">開機動畫 for ColorOS</h1>
+        <p class="subtitle" data-i18n="pageSubtitle">上傳影片或 GIF，自動轉換為水平居中、位於上黃金分割點的 ColorOS 開機動畫</p>
+      </header>
+
+      <a class="author-link" href="https://github.com/yuzlyn" target="_blank" rel="noopener noreferrer" aria-label="前往 yuzlyn 的 GitHub 個人頁面" data-i18n-aria-label="authorLinkLabel">
+        <img class="github-avatar" src="assets/yuzlyn-github.png" alt="yuzlyn 的 GitHub 大頭貼" data-i18n-alt="authorAvatarAlt">
+        <span class="author-id">@yuzlyn</span>
+        <svg class="author-arrow" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42L17.59 5H14V3ZM5 5h6V3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-6h-2v6H5V5Z"></path>
+        </svg>
+      </a>
+
+      <section class="controls" aria-label="連線狀態" data-i18n-aria-label="controlsLabel">
+        <div class="state-row" aria-live="polite">
+          <mdui-chip id="bridge-chip" variant="assist" class="status-chip">
+            <svg slot="icon" class="chip-icon status-indicator" viewBox="0 0 18 18" aria-hidden="true">
+              <circle cx="9" cy="9" r="4"></circle>
+            </svg>
+            <span id="bridge-label" data-i18n="connectingKernelSU">正在連線至 KernelSU</span>
+          </mdui-chip>
+          <mdui-chip id="converting-chip" variant="assist" class="hidden">
+            <svg slot="icon" class="chip-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 4V1L8 5l4 4V6a6 6 0 1 1-5.65 4H4.26A8 8 0 1 0 12 4Z"></path>
+            </svg>
+            <span id="converting-label">轉換中 0%</span>
+          </mdui-chip>
+          <mdui-chip id="installed-chip" variant="assist" class="hidden">
+            <svg slot="icon" class="chip-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z"></path>
+            </svg>
+            <span data-i18n="installedLabel">已安裝自訂動畫</span>
+          </mdui-chip>
+        </div>
+      </section>
+
+      <mdui-card id="error-card" variant="filled" class="message-card hidden" role="status">
+        <div class="message-icon" aria-hidden="true">
+          <svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 2 1 21h22L12 2Zm1 16h-2v-2h2v2Zm0-4h-2v-4h2v4Z"></path></svg>
+        </div>
+        <div class="message-copy">
+          <h2 data-i18n="convertFailed">轉換失敗</h2>
+          <p id="error-text"></p>
+        </div>
+      </mdui-card>
+
+      <section class="upload-section" aria-label="上傳影片或 GIF" data-i18n-aria-label="uploadSectionLabel">
+        <mdui-card variant="filled" class="upload-card">
+          <div class="list-item">
+            <div class="leading-icon" aria-hidden="true">
+              <svg class="ui-icon" viewBox="0 0 24 24"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4ZM14 13H5v-2h9v2Z"></path></svg>
+            </div>
+            <div class="item-copy">
+              <h2 data-i18n="uploadTitle">上傳影片 / GIF</h2>
+              <p id="video-name" class="meta-text" data-i18n="supportedFormats">支援 mp4 / mov / webm / mkv / gif · 水平居中、位於上黃金分割點</p>
+            </div>
+            <mdui-button id="video-upload" variant="tonal" class="select-button" data-i18n="chooseMedia">選擇影片 / GIF</mdui-button>
+          </div>
+
+          <div class="option-grid">
+            <div class="option-row">
+              <span data-i18n="frameRate">幀率</span>
+              <div class="option-control">
+                <input id="fps-slider" type="range" min="10" max="60" step="1" value="24" aria-label="幀率" data-i18n-aria-label="frameRate">
+                <strong id="fps-value">24 fps</strong>
+              </div>
+            </div>
+            <div class="option-row">
+              <span data-i18n="durationCap">時長上限</span>
+              <div class="option-control">
+                <input id="duration-slider" type="range" min="3" max="30" step="1" value="10" aria-label="時長上限" data-i18n-aria-label="durationCap">
+                <strong id="duration-value">10 秒</strong>
+              </div>
+            </div>
+            <div class="option-row">
+              <span data-i18n="outputSize">輸出尺寸</span>
+              <div class="option-control">
+                <mdui-segmented-button-group id="size-mode" selects="single" value="auto">
+                  <mdui-segmented-button value="auto" data-i18n="sizeAuto">自動（屏幕）</mdui-segmented-button>
+                  <mdui-segmented-button value="custom" data-i18n="sizeCustom">自定義</mdui-segmented-button>
+                </mdui-segmented-button-group>
+              </div>
+            </div>
+            <div class="option-row hidden" id="custom-size-row">
+              <span data-i18n="customSizeLabel">寬 × 高</span>
+              <div class="option-control">
+                <mdui-text-field id="custom-size" label="例如 720x1584" data-i18n-label="customSizeHint" value=""></mdui-text-field>
+              </div>
+            </div>
+          </div>
+
+          <mdui-linear-progress id="convert-progress" class="convert-progress hidden" value="0" role="progressbar" aria-label="轉換進度" data-i18n-aria-label="convertingLabel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></mdui-linear-progress>
+
+          <mdui-button id="convert-button" variant="filled" class="convert-button" disabled data-i18n="startConvert">開始轉換</mdui-button>
+          <input id="video-file" type="file" accept="video/*,image/gif,.gif,.mp4,.mov,.webm,.mkv,.m4v" hidden>
+        </mdui-card>
+      </section>
+
+      <section class="current-section" aria-label="當前動畫" data-i18n-aria-label="currentSectionLabel">
+        <mdui-card variant="filled" class="current-card">
+          <div class="current-heading">
+            <div class="leading-icon" aria-hidden="true">
+              <svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm-1-12h2v4h-2V8Zm0 6h2v2h-2v-2Z"></path></svg>
+            </div>
+            <div class="item-copy">
+              <h2 data-i18n="currentAnimation">當前開機動畫</h2>
+              <p id="current-status" class="meta-text" data-i18n="loadingStatus">正在讀取狀態</p>
+            </div>
+            <mdui-button id="restore-button" variant="tonal" class="hidden" data-i18n="restoreDefault">恢復系統默認</mdui-button>
+          </div>
+          <div id="preview-wrap" class="preview-wrap hidden">
+            <img id="preview-img" class="preview-img" alt="開機動畫預覽" data-i18n-alt="previewAlt">
+          </div>
+        </mdui-card>
+      </section>
+
+      <mdui-card variant="filled" class="system-card">
+        <div class="list-item system-item">
+          <div class="leading-icon system-icon" aria-hidden="true">
+            <svg class="ui-icon" viewBox="0 0 24 24"><path d="M4 6h16v10H4V6Zm-2 12h20v2H2v-2Zm4-10v6h12V8H6Z"></path></svg>
+          </div>
+          <div class="item-copy">
+            <h2 data-i18n="rebootToApply">重啟生效</h2>
+            <p id="system-status" class="meta-text" data-i18n="loadingStatus">正在讀取狀態</p>
+          </div>
+          <mdui-button id="reboot-button" variant="tonal" data-i18n="restartDevice">重啟設備</mdui-button>
+        </div>
+      </mdui-card>
+
+      <a class="source-link" href="https://github.com/yuzlyn/boot_animation_for_coloros16" target="_blank" rel="noopener noreferrer" aria-label="開啟開機動畫原始碼儲存庫" data-i18n-aria-label="sourceLinkLabel">
+        <mdui-card variant="filled" class="source-card">
+          <div class="source-content">
+            <div class="source-icon" aria-hidden="true">
+              <svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.38.97.1-.75.4-1.27.74-1.56-2.57-.3-5.28-1.29-5.28-5.69 0-1.26.45-2.29 1.2-3.1-.12-.3-.52-1.47.11-3.06 0 0 .98-.31 3.16 1.19a10.98 10.98 0 0 1 5.74 0c2.19-1.5 3.16-1.19 3.16-1.19.63 1.59.23 2.76.11 3.06.75.81 1.2 1.84 1.2 3.1 0 4.42-2.71 5.39-5.29 5.68.42.36.79 1.06.79 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"></path></svg>
+            </div>
+            <div class="source-copy">
+              <h2 data-i18n="sourceRepository">原始碼儲存庫</h2>
+              <p>github.com/yuzlyn/boot_animation_for_coloros16</p>
+            </div>
+            <svg class="source-arrow" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42L17.59 5H14V3ZM5 5h6V3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-6h-2v6H5V5Z"></path>
+            </svg>
+          </div>
+        </mdui-card>
+      </a>
+
+      <a id="about-card" class="resource-link" href="about.html" aria-label="開啟 README 關於頁面" data-i18n-aria-label="aboutLinkLabel">
+        <mdui-card variant="filled" class="resource-card about-card">
+          <div class="resource-content">
+            <div class="resource-icon" aria-hidden="true">
+              <svg class="ui-icon" viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6Zm1-15A10 10 0 1 0 12 22 10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16ZM11 9h2V7h-2v2Z"></path></svg>
+            </div>
+            <div class="resource-copy">
+              <h2 data-i18n="about">關於</h2>
+              <p data-i18n="aboutDetail">查看 README</p>
+            </div>
+            <svg class="resource-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6 1.41-1.41L17.83 12l-7.42 7.41L9 18Z"></path></svg>
+          </div>
+        </mdui-card>
+      </a>
+
+      <a id="donate-card" class="resource-link donate-link" href="donate.html" aria-label="開啟贊助作者頁面" data-i18n-aria-label="donateLinkLabel">
+        <mdui-card variant="filled" class="resource-card donate-card">
+          <div class="resource-content donate-content">
+            <div class="resource-icon" aria-hidden="true">
+              <svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 21.35 10.55 20C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09A6.03 6.03 0 0 1 16.5 3C19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.51L12 21.35Z"></path></svg>
+            </div>
+            <div class="resource-copy">
+              <h2 data-i18n="donateAuthor">贊助作者</h2>
+              <p data-i18n="donateDetail">支付寶 / 微信支付</p>
+            </div>
+            <svg class="resource-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6 1.41-1.41L17.83 12l-7.42 7.41L9 18Z"></path></svg>
+          </div>
+        </mdui-card>
+      </a>
+
+      <footer aria-label="版本信息" data-i18n-aria-label="versionInfo">
+        <span>v1.3.0</span>
+        <span aria-hidden="true">·</span>
+        <span>yuzlyn</span>
+      </footer>
+    </main>
+
+    <mdui-dialog id="reboot-dialog" headline="重新啟動裝置？" description="未儲存的應用程式狀態將會遺失。新的開機動畫將在重新啟動後生效。" data-i18n-headline="restartDialogHeadline" data-i18n-description="restartDialogDescription">
+      <mdui-button slot="action" variant="text" id="cancel-reboot" data-i18n="cancel">取消</mdui-button>
+      <mdui-button slot="action" variant="filled" id="confirm-reboot" data-i18n="restart">重新啟動</mdui-button>
+    </mdui-dialog>
+
+    <mdui-dialog id="video-source-dialog" headline="選擇影片 / GIF" data-i18n-headline="chooseMediaDialog">
+      <div class="path-import">
+        <p class="path-import-hint" data-i18n="pathImportHint">如果檔案選擇器無法使用，請在檔案管理器中複製影片或 GIF 路徑並貼到這裡。</p>
+        <mdui-text-field id="video-path-input" label="影片 / GIF 檔案路徑" data-i18n-label="pathImportLabel" clearable class="path-input"></mdui-text-field>
+      </div>
+      <mdui-button slot="action" variant="text" id="video-picker-fallback" data-i18n="chooseFromPicker">開啟檔案選擇器</mdui-button>
+      <mdui-button slot="action" variant="text" id="cancel-video-source" data-i18n="cancel">取消</mdui-button>
+      <mdui-button slot="action" variant="filled" id="confirm-video-path" data-i18n="importFromPath">從路徑匯入</mdui-button>
+    </mdui-dialog>
+
+    <mdui-dialog id="restore-dialog" headline="恢復系統預設開機動畫？" description="已上傳的自訂開機動畫將被刪除，重新啟動後恢復為系統預設動畫。" data-i18n-headline="restoreDialogHeadline" data-i18n-description="restoreDialogDescription">
+      <mdui-button slot="action" variant="text" id="cancel-restore" data-i18n="cancel">取消</mdui-button>
+      <mdui-button slot="action" variant="filled" id="confirm-restore" data-i18n="restoreConfirm">恢復預設</mdui-button>
+    </mdui-dialog>
+
+    <mdui-snackbar id="snackbar" closeable></mdui-snackbar>
+  </body>
+</html>
