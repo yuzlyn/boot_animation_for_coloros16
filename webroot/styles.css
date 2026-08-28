@@ -611,3 +611,38 @@ footer {
     background: rgb(var(--mdui-color-surface-container));
   }
 }
+
+/* 上傳預覽 */
+.upload-preview-wrap {
+  margin: 0 24px 16px;
+}
+
+.upload-preview-screen {
+  position: relative;
+  margin: 0 auto;
+  border-radius: 18px;
+  background: #000;
+  overflow: hidden;
+}
+
+.upload-preview-slot {
+  position: absolute;
+  top: 38.2%;
+  left: 50%;
+  width: 100%;
+  transform: translate(-50%, -50%);
+}
+
+.upload-preview-media {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.upload-preview-hint {
+  margin: 10px 0 0;
+  color: rgb(var(--mdui-color-on-surface-variant));
+  font-size: 12px;
+  line-height: 17px;
+  text-align: center;
+}

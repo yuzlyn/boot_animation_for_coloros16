@@ -32,6 +32,11 @@ const TRANSLATIONS = {
     sizeCustom: "自定义",
     customSizeLabel: "宽 × 高",
     customSizeHint: "例如 720x1584",
+    animSize: "动画大小",
+    playback: "播放次数",
+    playLoop: "循环播放",
+    playOnce: "只播放一次",
+    previewHint: "预览：动画将以所选大小显示在上黄金分割点",
     convertingLabel: "转换进度",
     startConvert: "开始转换",
     currentSectionLabel: "当前动画",
@@ -116,6 +121,11 @@ const TRANSLATIONS = {
     sizeCustom: "自訂",
     customSizeLabel: "寬 × 高",
     customSizeHint: "例如 720x1584",
+    animSize: "動畫大小",
+    playback: "播放次數",
+    playLoop: "循環播放",
+    playOnce: "只播放一次",
+    previewHint: "預覽：動畫將以所選大小顯示於上黃金分割點",
     convertingLabel: "轉換進度",
     startConvert: "開始轉換",
     currentSectionLabel: "當前動畫",
@@ -200,6 +210,11 @@ const TRANSLATIONS = {
     sizeCustom: "Custom",
     customSizeLabel: "Width × height",
     customSizeHint: "e.g. 720x1584",
+    animSize: "Animation size",
+    playback: "Playback",
+    playLoop: "Loop",
+    playOnce: "Play once",
+    previewHint: "Preview: the animation appears at the chosen size on the upper golden-ratio point",
     convertingLabel: "Conversion progress",
     startConvert: "Start conversion",
     currentSectionLabel: "Current animation",
@@ -414,6 +429,14 @@ const durationValue = document.querySelector("#duration-value");
 const sizeMode = document.querySelector("#size-mode");
 const customSizeRow = document.querySelector("#custom-size-row");
 const customSize = document.querySelector("#custom-size");
+const sizeSlider = document.querySelector("#size-slider");
+const sizeValue = document.querySelector("#size-value");
+const playMode = document.querySelector("#play-mode");
+const uploadPreviewWrap = document.querySelector("#upload-preview-wrap");
+const uploadPreviewScreen = document.querySelector("#upload-preview-screen");
+const uploadPreviewSlot = document.querySelector("#upload-preview-slot");
+const uploadPreviewImg = document.querySelector("#upload-preview-img");
+const uploadPreviewVideo = document.querySelector("#upload-preview-video");
 const currentStatus = document.querySelector("#current-status");
 const restoreButton = document.querySelector("#restore-button");
 const previewWrap = document.querySelector("#preview-wrap");
@@ -433,6 +456,7 @@ let uploadInProgress = false;
 let pollTimer = 0;
 let titleAnimationFrame = 0;
 let wasConverting = false;
+let previewObjectUrl = null;
 
 async function refreshStatus() {
   let status = {};
@@ -483,8 +507,10 @@ function applyStatus(s) {
     const frames = s.frames && s.frames !== "-" ? t("framesCount", { count: s.frames }) : t("framesUnknown");
     const fps = s.fps && s.fps !== "-" ? ` · ${s.fps} fps` : "";
     const box = s.frame_w && s.frame_w !== "-" ? ` · ${s.frame_w}×${s.frame_h}` : "";
-    const size = s.size && s.size !== "-" ? ` · ${formatBytes(s.size)}` : "";
-    currentStatus.textContent = `${frames}${fps}${box}${size}`;
+    const sizePct = s.size_pct && s.size_pct !== "-" ? ` · ${s.size_pct}%` : "";
+    const play = s.play_count === "1" ? ` · ${t("playOnce")}` : ` · ${t("playLoop")}`;
+    const fileSize = s.size && s.size !== "-" ? ` · ${formatBytes(s.size)}` : "";
+    currentStatus.textContent = `${frames}${fps}${box}${sizePct}${play}${fileSize}`;
     if (wasConverting && String(s.converting) !== "1") loadPreview();
   } else {
     installedChip.classList.add("hidden");
@@ -497,6 +523,7 @@ function applyStatus(s) {
   const sw = s.screen_w || "-";
   const sh = s.screen_h || "-";
   systemStatus.textContent = t("systemStatusDetail", { width: sw, height: sh });
+  updatePreviewScreenSize(sw, sh);
 }
 
 function errorMessage(code) {
@@ -583,8 +610,10 @@ async function startConvert() {
     const fps = Number(fpsSlider.value) || 24;
     const maxsec = Number(durationSlider.value) || 10;
     const box = sizeMode.value === "custom" ? customSize.value.trim() : "auto";
+    const sizePct = Number(sizeSlider.value) || 100;
+    const play = playMode.value === "once" ? "once" : "loop";
     const result = await exec(
-      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)}`,
+      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)} ${sizePct} ${shellQuote(play)}`,
       { timeout: 30000 },
     );
     if (!result.includes("OK started")) throw new Error(result.includes("ERROR busy") ? "busy" : "start_failed");
@@ -688,18 +717,73 @@ async function importFromPath(rawPath) {
   }
 }
 
+function clearUploadPreview() {
+  uploadPreviewImg.removeAttribute("src");
+  uploadPreviewVideo.removeAttribute("src");
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = null;
+  }
+}
+
+function setUploadPreviewVisible(visible) {
+  uploadPreviewWrap.classList.toggle("hidden", !visible);
+}
+
+function updatePreviewScreenSize(swRaw, shRaw) {
+  const sw = Number(swRaw) || 1440;
+  const sh = Number(shRaw) || 3168;
+  const maxH = 300;
+  const maxW = 200;
+  let w = maxW;
+  if ((w * sh) / sw > maxH) w = Math.max(48, Math.floor((maxH * sw) / sh));
+  uploadPreviewScreen.style.width = `${w}px`;
+  uploadPreviewScreen.style.aspectRatio = `${sw} / ${sh}`;
+}
+
+function applyPreviewGeometry() {
+  const pct = Number(sizeSlider.value) || 100;
+  sizeValue.textContent = `${pct}%`;
+  uploadPreviewSlot.style.width = `${pct}%`;
+}
+
+function onPreviewMediaLoaded(w, h) {
+  if (w > 0 && h > 0) uploadPreviewSlot.style.aspectRatio = `${w} / ${h}`;
+}
+
+function showUploadPreview(fileLike) {
+  clearUploadPreview();
+  if (!fileLike || fileLike.isPath) {
+    setUploadPreviewVisible(false);
+    return;
+  }
+  const lower = (fileLike.name || "").toLowerCase();
+  const isGif = lower.endsWith(".gif");
+  previewObjectUrl = URL.createObjectURL(fileLike);
+  uploadPreviewImg.hidden = !isGif;
+  uploadPreviewVideo.hidden = isGif;
+  uploadPreviewVideo.loop = playMode.value === "loop";
+  if (isGif) uploadPreviewImg.src = previewObjectUrl;
+  else uploadPreviewVideo.src = previewObjectUrl;
+  setUploadPreviewVisible(true);
+  applyPreviewGeometry();
+}
+
 function selectVideo(fileLike) {
   if (!fileLike || fileLike.size <= 0) {
+    showUploadPreview(null);
     showMessage(t("fileEmpty"));
     return;
   }
   if (fileLike.size > 1024 * 1024 * 1024) {
+    showUploadPreview(null);
     showMessage(t("fileTooLarge"));
     return;
   }
   const lower = (fileLike.name || "").toLowerCase();
   const ok = [".mp4", ".mov", ".webm", ".mkv", ".m4v", ".3gp", ".ts", ".gif"].some((ext) => lower.endsWith(ext));
   if (!ok) {
+    showUploadPreview(null);
     showMessage(t("unsupportedType"));
     return;
   }
@@ -707,6 +791,7 @@ function selectVideo(fileLike) {
   const source = fileLike.isPath ? fileLike.path : fileLike.name;
   videoName.textContent = `${source} · ${formatBytes(fileLike.size)}`;
   convertButton.disabled = uploadInProgress;
+  showUploadPreview(fileLike);
   showMessage(t("fileSelected"));
 }
 
@@ -740,6 +825,17 @@ function init() {
   });
   sizeMode.addEventListener("change", () => {
     customSizeRow.classList.toggle("hidden", sizeMode.value !== "custom");
+  });
+
+  sizeSlider.addEventListener("input", applyPreviewGeometry);
+  playMode.addEventListener("change", () => {
+    uploadPreviewVideo.loop = playMode.value === "loop";
+  });
+  uploadPreviewImg.addEventListener("load", () => {
+    onPreviewMediaLoaded(uploadPreviewImg.naturalWidth, uploadPreviewImg.naturalHeight);
+  });
+  uploadPreviewVideo.addEventListener("loadedmetadata", () => {
+    onPreviewMediaLoaded(uploadPreviewVideo.videoWidth, uploadPreviewVideo.videoHeight);
   });
 
   convertButton.addEventListener("click", startConvert);

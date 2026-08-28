@@ -30,6 +30,8 @@
 - 支援 mp4 / mov / webm / mkv / gif 等格式。
 - 影片使用 MediaCodec 硬解碼，GIF 使用系統解碼器，無需 ffmpeg。
 - 動畫水平居中，垂直位於上黃金分割點（距頂部約 0.382×畫面高）。
+- 可自訂動畫大小（10–100%），選擇檔案後即時預覽大小與位置。
+- 可設定循環播放或只播放一次。
 - 可調幀率（10–60 fps）、時長上限與輸出尺寸。
 - WebUI 支援簡體中文、台灣繁體中文與英文。
 - 內建關於頁面與贊助作者頁面。
@@ -49,6 +51,7 @@ adb reboot
 ```
 
 ### 版本歷史
+- **v1.4.0** — 新增動畫大小設定（10–100%）與即時預覽；新增循環 / 單次播放設定
 - **v1.3.0** — WebUI 全面多語支援（繁中 / 簡中 / 英文），三語 README
 - **v1.2.0** — 新增關於頁面、贊助作者頁面與原始碼儲存庫入口
 - **v1.1.0** — 新增 GIF 格式支援；動畫改為水平居中、垂直位於上黃金分割點
@@ -77,6 +80,8 @@ adb reboot
 - 支持 mp4 / mov / webm / mkv / gif 等格式。
 - 视频使用 MediaCodec 硬解码，GIF 使用系统解码器，无需 ffmpeg。
 - 动画水平居中，垂直位于上黄金分割点（距顶部约 0.382×画面高）。
+- 可自定义动画大小（10–100%），选择文件后即时预览大小与位置。
+- 可设置循环播放或只播放一次。
 - 可调帧率（10–60 fps）、时长上限与输出尺寸。
 - WebUI 支持简体中文、台湾繁体中文和英文。
 - 内置关于页面与赞助作者页面。
@@ -96,6 +101,7 @@ adb reboot
 ```
 
 ### 版本历史
+- **v1.4.0** — 新增动画大小设置（10–100%）与即时预览；新增循环 / 单次播放设置
 - **v1.3.0** — WebUI 全面多语言支持（繁中 / 简中 / 英文），三语 README
 - **v1.2.0** — 新增关于页面、赞助作者页面与源码仓库入口
 - **v1.1.0** — 新增 GIF 格式支持；动画改为水平居中、垂直位于上黄金分割点
@@ -124,6 +130,8 @@ A ColorOS / realme UI / OxygenOS boot animation module: upload a video or GIF in
 - Supports mp4 / mov / webm / mkv / gif and more.
 - MediaCodec hardware decoding for videos and the system decoder for GIFs — no ffmpeg required.
 - Horizontally centered, vertical center at the upper golden-ratio point (~0.382× screen height from the top).
+- Custom animation size (10–100%) with a live size-and-position preview after choosing a file.
+- Loop playback or play once.
 - Adjustable frame rate (10–60 fps), duration cap, and output size.
 - WebUI languages: Simplified Chinese, Traditional Chinese for Taiwan, and English.
 - Built-in About and donation pages.
@@ -143,6 +151,7 @@ adb reboot
 ```
 
 ### Version history
+- **v1.4.0** — Animation size setting (10-100%) with live preview; loop / play-once playback
 - **v1.3.0** — Full WebUI multilingual support (zh-TW / zh-CN / en-US) and trilingual README
 - **v1.2.0** — About page, donation page, and source repository entry
 - **v1.1.0** — GIF format support; animation horizontally centered at the upper golden-ratio point

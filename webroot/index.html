@@ -7,11 +7,11 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>開機動畫 for ColorOS</title>
     <link rel="stylesheet" href="vendor/mdui.css">
-    <link rel="stylesheet" href="styles.css?v=130">
+    <link rel="stylesheet" href="styles.css?v=140">
     <script src="vendor/mdui.global.js"></script>
     <script src="vendor/material-kolor.js"></script>
-    <script src="theme-cache.js?v=130"></script>
-    <script src="app.js?v=130" defer></script>
+    <script src="theme-cache.js?v=140"></script>
+    <script src="app.js?v=140" defer></script>
   </head>
   <body>
     <mdui-top-app-bar variant="small" scroll-behavior="elevate">
@@ -118,6 +118,32 @@
                 <mdui-text-field id="custom-size" label="例如 720x1584" data-i18n-label="customSizeHint" value=""></mdui-text-field>
               </div>
             </div>
+            <div class="option-row">
+              <span data-i18n="animSize">動畫大小</span>
+              <div class="option-control">
+                <input id="size-slider" type="range" min="10" max="100" step="5" value="100" aria-label="動畫大小" data-i18n-aria-label="animSize">
+                <strong id="size-value">100%</strong>
+              </div>
+            </div>
+            <div class="option-row">
+              <span data-i18n="playback">播放次數</span>
+              <div class="option-control">
+                <mdui-segmented-button-group id="play-mode" selects="single" value="loop">
+                  <mdui-segmented-button value="loop" data-i18n="playLoop">循環播放</mdui-segmented-button>
+                  <mdui-segmented-button value="once" data-i18n="playOnce">只播放一次</mdui-segmented-button>
+                </mdui-segmented-button-group>
+              </div>
+            </div>
+          </div>
+
+          <div id="upload-preview-wrap" class="upload-preview-wrap hidden">
+            <div id="upload-preview-screen" class="upload-preview-screen">
+              <div id="upload-preview-slot" class="upload-preview-slot">
+                <img id="upload-preview-img" class="upload-preview-media" alt="開機動畫預覽" data-i18n-alt="previewAlt" hidden>
+                <video id="upload-preview-video" class="upload-preview-media" muted playsinline preload="metadata" hidden></video>
+              </div>
+            </div>
+            <p class="upload-preview-hint" data-i18n="previewHint">預覽：動畫將以所選大小顯示於上黃金分割點</p>
           </div>
 
           <mdui-linear-progress id="convert-progress" class="convert-progress hidden" value="0" role="progressbar" aria-label="轉換進度" data-i18n-aria-label="convertingLabel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></mdui-linear-progress>
@@ -206,7 +232,7 @@
       </a>
 
       <footer aria-label="版本信息" data-i18n-aria-label="versionInfo">
-        <span>v1.3.0</span>
+        <span>v1.4.0</span>
         <span aria-hidden="true">·</span>
         <span>yuzlyn</span>
       </footer>

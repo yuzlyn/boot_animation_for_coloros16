@@ -2,7 +2,7 @@
 # bootctl.sh - 開機動畫 for ColorOS 控制腳本
 # 用法:
 #   bootctl status                    輸出 key=value 狀態（供 WebUI 讀取）
-#   bootctl convert <video|gif> <fps> <maxsec> [WxH|auto]
+#   bootctl convert <video|gif> <fps> <maxsec> [WxH|auto] [sizePct] [loop|once]
 #                                     異步轉換影片/GIF 為開機動畫
 #   bootctl restore                   恢復系統默認開機動畫
 
@@ -63,11 +63,11 @@ compute_frame_box() {
 }
 
 run_converter() {
-  # run_converter <video> <outzip> <fps> <maxsec> <W> <H>
-  local video="$1" out="$2" fps="$3" maxsec="$4" W="$5" H="$6"
+  # run_converter <video> <outzip> <fps> <maxsec> <W> <H> <sizePct> <playCount>
+  local video="$1" out="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" playcount="$8"
   app_process -Djava.class.path="$JAR" /system/bin \
     com.yuzlyn.bootanim.Video2Boot \
-    "$video" "$out" "$fps" "$maxsec" "$W" "$H" 2>&1
+    "$video" "$out" "$fps" "$maxsec" "$W" "$H" "$size" "$playcount" 2>&1
 }
 
 cmd_status() {
@@ -89,6 +89,8 @@ cmd_status() {
   fps="$(get_status fps)"; [ -z "$fps" ] && fps="-"
   fw="$(get_status frame_w)"; [ -z "$fw" ] && fw="-"
   fh="$(get_status frame_h)"; [ -z "$fh" ] && fh="-"
+  sp="$(get_status size_pct)"; [ -z "$sp" ] && sp=100
+  pc="$(get_status play_count)"; [ -z "$pc" ] && pc=0
 
   # 若轉換進程已死但標記還在，重置標記
   if [ "$conv" = "1" ]; then
@@ -111,6 +113,8 @@ frames=$frames
 fps=$fps
 frame_w=$fw
 frame_h=$fh
+size_pct=$sp
+play_count=$pc
 screen_w=$sw
 screen_h=$sh
 preview=$([ -f "$PREVIEW" ] && echo 1 || echo 0)
@@ -119,14 +123,19 @@ EOF
 }
 
 cmd_convert() {
-  local video="$1" fps="$2" maxsec="$3" box="$4"
-  local screen sw sh bw bh bgpid frame
+  local video="$1" fps="$2" maxsec="$3" box="$4" size="$5" play="$6"
+  local screen sw sh bw bh bgpid frame playcount
 
   [ -f "$video" ] || { echo "ERROR video_not_found"; exit 1; }
   case "$fps" in ''|*[!0-9]*) fps=24 ;; esac
   case "$maxsec" in ''|*[!0-9]*) maxsec=10 ;; esac
   [ "$fps" -lt 10 ] && fps=10; [ "$fps" -gt 60 ] && fps=60
   [ "$maxsec" -lt 1 ] && maxsec=1; [ "$maxsec" -gt 60 ] && maxsec=60
+  case "$size" in ''|*[!0-9]*) size=100 ;; esac
+  [ "$size" -lt 10 ] && size=10
+  [ "$size" -gt 100 ] && size=100
+  playcount=0
+  case "$play" in once|1|single) playcount=1 ;; esac
 
   # 已有轉換在跑
   if [ "$(get_status converting)" = "1" ]; then
@@ -163,7 +172,7 @@ cmd_convert() {
   set_status error ""
   set_status pid ""
 
-  log "convert start: video=$video fps=$fps maxsec=$maxsec frame=$frame screen=${sw}x${sh}"
+  log "convert start: video=$video fps=$fps maxsec=$maxsec frame=$frame size=$size playcount=$playcount screen=${sw}x${sh}"
 
   local outdir="$DATA/.work"
   rm -rf "$outdir" 2>/dev/null
@@ -171,7 +180,7 @@ cmd_convert() {
   local tmpzip="$outdir/result.zip"
 
   # 後台執行，輸出重定向避免阻塞 CGI 回包
-  nohup sh "$0" _do_convert "$video" "$tmpzip" "$fps" "$maxsec" $frame \
+  nohup sh "$0" _do_convert "$video" "$tmpzip" "$fps" "$maxsec" $frame "$size" "$playcount" \
     >> "$outdir/run.log" 2>&1 &
   bgpid=$!
   set_status pid "$bgpid"
@@ -179,14 +188,14 @@ cmd_convert() {
 }
 
 cmd_do_convert() {
-  local video="$1" tmpzip="$2" fps="$3" maxsec="$4" W="$5" H="$6"
+  local video="$1" tmpzip="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" playcount="$8"
   local outfile outcode frames cpid limit
 
   outfile="$DATA/.work/out.txt"
   : > "$outfile" 2>/dev/null
 
   # 前台啟動轉換器，輸出寫檔；後台循環同步進度到 status
-  run_converter "$video" "$tmpzip" "$fps" "$maxsec" "$W" "$H" \
+  run_converter "$video" "$tmpzip" "$fps" "$maxsec" "$W" "$H" "$size" "$playcount" \
     > "$outfile" 2>&1 &
   cpid=$!
   limit=$(( maxsec * 2 + 180 ))
@@ -250,6 +259,8 @@ cmd_do_convert() {
   set_status fps "$fps"
   set_status frame_w "$W"
   set_status frame_h "$H"
+  set_status size_pct "$size"
+  set_status play_count "$playcount"
   set_status progress 100
   set_status error ""
   set_status converting 0

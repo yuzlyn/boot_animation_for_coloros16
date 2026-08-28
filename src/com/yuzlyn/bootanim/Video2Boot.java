@@ -32,8 +32,11 @@ import java.util.zip.ZipOutputStream;
  * Video2Boot - convert a video into a ColorOS bootanimation.zip.
  *
  * Usage: app_process ... com.yuzlyn.bootanim.Video2Boot \
- *        <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH>
+ *        <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> \
+ *        [sizePct] [playCount]
  *
+ * sizePct (10-100, default 100) scales the animation inside the frame box;
+ * playCount (0=loop, 1=play once, default 0) is written to desc.txt.
  * Videos are decoded with MediaCodec (hardware surface preferred), animated
  * GIFs with android.graphics.Movie (Skia GIF codec). Every frame is scaled
  * to fit inside the frame box (aspect preserved) and composited on a black
@@ -59,7 +62,7 @@ public class Video2Boot {
 
     private static int run(String[] args) throws Exception {
         if (args.length < 6) {
-            System.err.println("usage: <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH>");
+            System.err.println("usage: <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> [sizePct] [playCount]");
             return 2;
         }
         File input = new File(args[0]);
@@ -68,9 +71,12 @@ public class Video2Boot {
         int maxSeconds = clamp(parseInt(args[3], 10), 1, 60);
         int frameW = even(parseInt(args[4], 720), 16);
         int frameH = even(parseInt(args[5], 1584), 16);
+        int sizePct = clamp(parseInt(args.length > 6 ? args[6] : "100", 100), 10, 100);
+        int playCount = clamp(parseInt(args.length > 7 ? args[7] : "0", 0), 0, 1);
 
         System.out.println("INFO input=" + input.getAbsolutePath());
-        System.out.println("INFO frame=" + frameW + "x" + frameH + " fps=" + fps + " maxSeconds=" + maxSeconds);
+        System.out.println("INFO frame=" + frameW + "x" + frameH + " fps=" + fps + " maxSeconds=" + maxSeconds
+                + " sizePct=" + sizePct + " playCount=" + playCount);
         System.out.println("PROGRESS 1");
 
         File workDir = new File(output.getParentFile(), ".convert-" + System.currentTimeMillis());
@@ -80,11 +86,11 @@ public class Video2Boot {
 
         int frameCount;
         if (isGifFile(input)) {
-            GifDecoder gd = new GifDecoder(input, fps, maxSeconds, frameW, frameH, frameDir);
+            GifDecoder gd = new GifDecoder(input, fps, maxSeconds, frameW, frameH, sizePct, frameDir);
             gd.decode();
             frameCount = gd.frameCount;
         } else {
-            Decoder dec = new Decoder(input, fps, maxSeconds, frameW, frameH, frameDir);
+            Decoder dec = new Decoder(input, fps, maxSeconds, frameW, frameH, sizePct, frameDir);
             dec.decode();
             frameCount = dec.frameCount;
         }
@@ -92,19 +98,19 @@ public class Video2Boot {
         System.out.println("PROGRESS 88");
         System.out.println("INFO frames=" + frameCount);
 
-        writeZip(output, frameW, frameH, fps, frameDir, frameCount);
+        writeZip(output, frameW, frameH, fps, frameDir, frameCount, playCount);
         deleteRecursive(workDir);
         System.out.println("PROGRESS 100");
         System.out.println("OK " + frameCount + " " + output.length());
         return 0;
     }
 
-    private static void writeZip(File output, int w, int h, int fps, File frameDir, int frameCount) throws IOException {
+    private static void writeZip(File output, int w, int h, int fps, File frameDir, int frameCount, int playCount) throws IOException {
         File tmp = new File(output.getParentFile(), output.getName() + ".tmp");
         ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tmp));
         zos.setLevel(0);
 
-        byte[] desc = String.format("g %d %d 0 0 %d\np 0 0 part0\n", w, h, fps).getBytes("UTF-8");
+        byte[] desc = String.format("g %d %d 0 0 %d\np %d 0 part0\n", w, h, fps, playCount).getBytes("UTF-8");
         putStored(zos, "desc.txt", desc);
 
         // directory entries mirror the layout of stock ColorOS zips
@@ -198,12 +204,14 @@ public class Video2Boot {
     /**
      * 合成到黑底畫布：水平居中，垂直中心對齊上黃金分割點
      * （距頂部 H/φ² ≈ 0.382H，貼邊時自動收斂以免超出畫布）。
+     * sizePct 控制動畫在畫布內的大小（10-100，100=鋪滿）。
      */
-    static Bitmap placeFrame(Bitmap b, int frameW, int frameH) {
+    static Bitmap placeFrame(Bitmap b, int frameW, int frameH, int sizePct) {
         Bitmap out = Bitmap.createBitmap(frameW, frameH, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
         c.drawColor(Color.BLACK);
-        float scale = Math.min((float) frameW / b.getWidth(), (float) frameH / b.getHeight());
+        float scale = Math.min((float) frameW / b.getWidth(), (float) frameH / b.getHeight())
+                * (sizePct / 100f);
         int dw = Math.max(1, (int) (b.getWidth() * scale));
         int dh = Math.max(1, (int) (b.getHeight() * scale));
         int left = (frameW - dw) / 2;
@@ -228,16 +236,18 @@ public class Video2Boot {
         final int fps;
         final int maxSeconds;
         final int frameW, frameH;
+        final int sizePct;
         final File frameDir;
         int frameCount = 0;
         int rotation = 0;
 
-        Decoder(File input, int fps, int maxSeconds, int frameW, int frameH, File frameDir) {
+        Decoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, File frameDir) {
             this.input = input;
             this.fps = fps;
             this.maxSeconds = maxSeconds;
             this.frameW = frameW;
             this.frameH = frameH;
+            this.sizePct = sizePct;
             this.frameDir = frameDir;
         }
 
@@ -331,7 +341,7 @@ public class Video2Boot {
                                             b.recycle();
                                             b = r;
                                         }
-                                        Bitmap framed = placeFrame(b, frameW, frameH);
+                                        Bitmap framed = placeFrame(b, frameW, frameH, sizePct);
                                         b.recycle();
                                         File out = new File(frameDir, String.format("%04d.jpg", frameCount + 1));
                                         writeJpeg(framed, out);
@@ -414,7 +424,7 @@ public class Video2Boot {
                                         b.recycle();
                                         b = r;
                                     }
-                                    Bitmap framed = placeFrame(b, frameW, frameH);
+                                    Bitmap framed = placeFrame(b, frameW, frameH, sizePct);
                                     b.recycle();
                                     File out = new File(frameDir, String.format("%04d.jpg", frameCount + 1));
                                     writeJpeg(framed, out);
@@ -605,15 +615,17 @@ public class Video2Boot {
         final int fps;
         final int maxSeconds;
         final int frameW, frameH;
+        final int sizePct;
         final File frameDir;
         int frameCount = 0;
 
-        GifDecoder(File input, int fps, int maxSeconds, int frameW, int frameH, File frameDir) {
+        GifDecoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, File frameDir) {
             this.input = input;
             this.fps = fps;
             this.maxSeconds = maxSeconds;
             this.frameW = frameW;
             this.frameH = frameH;
+            this.sizePct = sizePct;
             this.frameDir = frameDir;
         }
 
@@ -635,7 +647,7 @@ public class Video2Boot {
                 c.drawColor(Color.BLACK);
                 movie.setTime(t);
                 movie.draw(c, 0f, 0f);
-                Bitmap framed = placeFrame(b, frameW, frameH);
+                Bitmap framed = placeFrame(b, frameW, frameH, sizePct);
                 b.recycle();
                 writeJpeg(framed, new File(frameDir, String.format("%04d.jpg", frameCount + 1)));
                 framed.recycle();
