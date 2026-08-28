@@ -144,7 +144,7 @@ cmd_convert() {
   [ "$size" -gt 100 ] && size=100
   case "$loopcount" in ''|*[!0-9]*) loopcount=1 ;; esac
   [ "$loopcount" -lt 1 ] && loopcount=1
-  [ "$loopcount" -gt 10 ] && loopcount=10
+  [ "$loopcount" -gt 20 ] && loopcount=20
   case "$x" in ''|*[!0-9]*) x=50 ;; esac
   [ "$x" -lt 0 ] && x=0; [ "$x" -gt 100 ] && x=100
   case "$y" in ''|*[!0-9]*) y=38 ;; esac

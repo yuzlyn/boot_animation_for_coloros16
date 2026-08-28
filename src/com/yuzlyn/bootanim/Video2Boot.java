@@ -36,7 +36,7 @@ import java.util.zip.ZipOutputStream;
  *        [sizePct] [loopCount] [xPct] [yPct] [speedPct]
  *
  * sizePct (10-100, default 100) scales the animation inside the frame box.
- * loopCount (1-10, default 1) plays the animation that many times: the frame
+ * loopCount (1-20, default 1) plays the animation that many times: the frame
  * sequence is repeated inside the zip (spliced), so looping does not depend
  * on the device's desc.txt loop support.
  * xPct / yPct (0-100, defaults 50 / 38) place the animation center on the
@@ -77,7 +77,7 @@ public class Video2Boot {
         int frameW = even(parseInt(args[4], 720), 16);
         int frameH = even(parseInt(args[5], 1584), 16);
         int sizePct = clamp(parseInt(args.length > 6 ? args[6] : "100", 100), 10, 100);
-        int loopCount = clamp(parseInt(args.length > 7 ? args[7] : "1", 1), 1, 10);
+        int loopCount = clamp(parseInt(args.length > 7 ? args[7] : "1", 1), 1, 20);
         int xPct = clamp(parseInt(args.length > 8 ? args[8] : "50", 50), 0, 100);
         int yPct = clamp(parseInt(args.length > 9 ? args[9] : "38", 38), 0, 100);
         int speedPct = clamp(parseInt(args.length > 10 ? args[10] : "100", 100), 25, 400);
