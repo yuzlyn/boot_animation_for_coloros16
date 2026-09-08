@@ -33,6 +33,8 @@
 - 可自訂動畫大小（10–100%），選擇檔案後即時預覽大小與位置。
 - 可設定循環次數（1–20 次），以拼接幀方式確保循環在所有裝置生效。
 - 可調播放速度（0.25–4×）。
+- 可旋轉影片 0–360°（可斜著擺放），選擇檔案後即時預覽旋轉效果。
+- 可截取影片片段：設定開始與結束時間，只轉換需要的部分。
 - 可自訂水平與垂直位置，或使用預設的居中上黃金分割點。
 - 可調幀率（10–60 fps）、時長上限與輸出尺寸。
 - WebUI 支援簡體中文、台灣繁體中文與英文。
@@ -53,6 +55,9 @@ adb reboot
 ```
 
 ### 版本歷史
+- **v1.8.2** — GIF 與總時長未知的影片也能使用截取；probe 可回報 GIF 總時長
+- **v1.8.1** — 旋轉範圍擴至 0–360°；所有參數滑桿皆可直接輸入數值
+- **v1.8.0** — 新增影片旋轉（0–360°，可斜放）與影片截取（選取開始 / 結束時間）；WebUI 即時預覽旋轉效果
 - **v1.7.1** — 循環次數上限提高至 20 次
 - **v1.7.0** — 循環改為次數設定（1–10 次），以幀拼接實現，不再依賴引擎循環
 - **v1.6.0** — 新增播放速度調節（0.25–4×）；修復 WebUI 預覽（怪異播放按鈕、畫面拉伸、循環失效）
@@ -89,6 +94,8 @@ adb reboot
 - 可自定义动画大小（10–100%），选择文件后即时预览大小与位置。
 - 可设置循环次数（1–20 次），以拼接帧方式确保循环在所有设备生效。
 - 可调播放速度（0.25–4×）。
+- 可旋转视频 0–360°（可斜着摆放），选择文件后即时预览旋转效果。
+- 可截取视频片段：设置开始与结束时间，只转换需要的部分。
 - 可自定义水平与垂直位置，或使用默认的居中上黄金分割点。
 - 可调帧率（10–60 fps）、时长上限与输出尺寸。
 - WebUI 支持简体中文、台湾繁体中文和英文。
@@ -109,6 +116,9 @@ adb reboot
 ```
 
 ### 版本历史
+- **v1.8.2** — GIF 与总时长未知的视频也能使用截取；probe 可回报 GIF 总时长
+- **v1.8.1** — 旋转范围扩至 0–360°；所有参数滑块皆可直接输入数值
+- **v1.8.0** — 新增视频旋转（0–360°，可斜放）与视频截取（选择开始 / 结束时间）；WebUI 即时预览旋转效果
 - **v1.7.1** — 循环次数上限提高至 20 次
 - **v1.7.0** — 循环改为次数设置（1–10 次），以帧拼接实现，不再依赖引擎循环
 - **v1.6.0** — 新增播放速度调节（0.25–4×）；修复 WebUI 预览（怪异播放按钮、画面拉伸、循环失效）
@@ -145,6 +155,8 @@ A ColorOS / realme UI / OxygenOS boot animation module: upload a video or GIF in
 - Custom animation size (10–100%) with a live size-and-position preview after choosing a file.
 - Set the loop count (1-20); frames are spliced so looping works on every device.
 - Adjustable playback speed (0.25-4×).
+- Rotate the video 0-360° (tilt it), with a live preview of the rotation after choosing a file.
+- Clip the video to a segment (set start and end time) and convert only the part you need.
 - Custom horizontal and vertical position, or the default centered upper golden-ratio point.
 - Adjustable frame rate (10–60 fps), duration cap, and output size.
 - WebUI languages: Simplified Chinese, Traditional Chinese for Taiwan, and English.
@@ -165,6 +177,9 @@ adb reboot
 ```
 
 ### Version history
+- **v1.8.2** — Clipping now also works for GIFs and videos with unknown duration; probe reports GIF duration
+- **v1.8.1** — Rotation range widened to 0-360°; every parameter slider now accepts typed values
+- **v1.8.0** — Video rotation (0-360°, tilt it) and video clipping (pick a start/end time); live rotation preview in the WebUI
 - **v1.7.1** — Loop count limit raised to 20
 - **v1.7.0** — Loop count setting (1-10) via frame splicing, no longer relying on engine looping
 - **v1.6.0** — Playback speed setting (0.25-4×); WebUI preview fixes (odd play button, stretched image, broken loop)

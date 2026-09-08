@@ -2,8 +2,10 @@
 # bootctl.sh - 開機動畫 for ColorOS 控制腳本
 # 用法:
 #   bootctl status                    輸出 key=value 狀態（供 WebUI 讀取）
-#   bootctl convert <video|gif> <fps> <maxsec> [WxH|auto] [sizePct] [loopCount] [xPct] [yPct] [default|custom] [speedPct]
+#   bootctl convert <video|gif> <fps> <maxsec> [WxH|auto] [sizePct] [loopCount] [xPct] [yPct] [default|custom] [speedPct] [rotateDeg] [trimStartSec] [trimEndSec]
 #                                     異步轉換影片/GIF 為開機動畫
+#                                     rotateDeg 0-360（預設 0）；trimStartSec/trimEndSec 截取區間（秒，預設 0 = 不使用）
+#   bootctl probe <video|gif>         輸出 key=value 元資料（type/duration/width/height/rotation）
 #   bootctl restore                   恢復系統默認開機動畫
 
 MODDIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -63,11 +65,11 @@ compute_frame_box() {
 }
 
 run_converter() {
-  # run_converter <video> <outzip> <fps> <maxsec> <W> <H> <sizePct> <loopCount> <xPct> <yPct> <speedPct>
-  local video="$1" out="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" loopcount="$8" x="$9" y="${10}" speed="${11}"
+  # run_converter <video> <outzip> <fps> <maxsec> <W> <H> <sizePct> <loopCount> <xPct> <yPct> <speedPct> <rotate> <start> <end>
+  local video="$1" out="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" loopcount="$8" x="$9" y="${10}" speed="${11}" rotate="${12}" start="${13}" end="${14}"
   app_process -Djava.class.path="$JAR" /system/bin \
     com.yuzlyn.bootanim.Video2Boot \
-    "$video" "$out" "$fps" "$maxsec" "$W" "$H" "$size" "$loopcount" "$x" "$y" "$speed" 2>&1
+    "$video" "$out" "$fps" "$maxsec" "$W" "$H" "$size" "$loopcount" "$x" "$y" "$speed" "$rotate" "$start" "$end" 2>&1
 }
 
 cmd_status() {
@@ -95,6 +97,9 @@ cmd_status() {
   yp="$(get_status y_pct)"; [ -z "$yp" ] && yp=38
   pm="$(get_status pos_mode)"; [ -z "$pm" ] && pm=default
   spd="$(get_status speed_pct)"; [ -z "$spd" ] && spd=100
+  rtd="$(get_status rotate_deg)"; [ -z "$rtd" ] && rtd=0
+  tst="$(get_status trim_start)"; [ -z "$tst" ] && tst=0
+  ted="$(get_status trim_end)"; [ -z "$ted" ] && ted=0
 
   # 若轉換進程已死但標記還在，重置標記
   if [ "$conv" = "1" ]; then
@@ -123,6 +128,9 @@ x_pct=$xp
 y_pct=$yp
 pos_mode=$pm
 speed_pct=$spd
+rotate_deg=$rtd
+trim_start=$tst
+trim_end=$ted
 screen_w=$sw
 screen_h=$sh
 preview=$([ -f "$PREVIEW" ] && echo 1 || echo 0)
@@ -131,7 +139,7 @@ EOF
 }
 
 cmd_convert() {
-  local video="$1" fps="$2" maxsec="$3" box="$4" size="$5" loopcount="$6" x="$7" y="$8" posmode="$9" speed="${10}"
+  local video="$1" fps="$2" maxsec="$3" box="$4" size="$5" loopcount="$6" x="$7" y="$8" posmode="$9" speed="${10}" rotate="${11}" start="${12}" end="${13}"
   local screen sw sh bw bh bgpid frame
 
   [ -f "$video" ] || { echo "ERROR video_not_found"; exit 1; }
@@ -153,6 +161,11 @@ cmd_convert() {
   case "$speed" in ''|*[!0-9]*) speed=100 ;; esac
   [ "$speed" -lt 25 ] && speed=25
   [ "$speed" -gt 400 ] && speed=400
+  case "$rotate" in ''|*[!0-9]*) rotate=0 ;; esac
+  [ "$rotate" -lt 0 ] && rotate=0
+  [ "$rotate" -gt 360 ] && rotate=360
+  case "$start" in ''|*[!0-9.]*) start=0 ;; esac
+  case "$end" in ''|*[!0-9.]*) end=0 ;; esac
 
   # 已有轉換在跑
   if [ "$(get_status converting)" = "1" ]; then
@@ -189,7 +202,7 @@ cmd_convert() {
   set_status error ""
   set_status pid ""
 
-  log "convert start: video=$video fps=$fps maxsec=$maxsec frame=$frame size=$size loopcount=$loopcount pos=$x,$y mode=$posmode speed=$speed screen=${sw}x${sh}"
+  log "convert start: video=$video fps=$fps maxsec=$maxsec frame=$frame size=$size loopcount=$loopcount pos=$x,$y mode=$posmode speed=$speed rotate=$rotate trim=${start}-${end} screen=${sw}x${sh}"
 
   local outdir="$DATA/.work"
   rm -rf "$outdir" 2>/dev/null
@@ -197,7 +210,7 @@ cmd_convert() {
   local tmpzip="$outdir/result.zip"
 
   # 後台執行，輸出重定向避免阻塞 CGI 回包
-  nohup sh "$0" _do_convert "$video" "$tmpzip" "$fps" "$maxsec" $frame "$size" "$loopcount" "$x" "$y" "$posmode" "$speed" \
+  nohup sh "$0" _do_convert "$video" "$tmpzip" "$fps" "$maxsec" $frame "$size" "$loopcount" "$x" "$y" "$posmode" "$speed" "$rotate" "$start" "$end" \
     >> "$outdir/run.log" 2>&1 &
   bgpid=$!
   set_status pid "$bgpid"
@@ -205,14 +218,14 @@ cmd_convert() {
 }
 
 cmd_do_convert() {
-  local video="$1" tmpzip="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" loopcount="$8" x="$9" y="${10}" posmode="${11}" speed="${12}"
+  local video="$1" tmpzip="$2" fps="$3" maxsec="$4" W="$5" H="$6" size="$7" loopcount="$8" x="$9" y="${10}" posmode="${11}" speed="${12}" rotate="${13}" start="${14}" end="${15}"
   local outfile outcode frames cpid limit
 
   outfile="$DATA/.work/out.txt"
   : > "$outfile" 2>/dev/null
 
   # 前台啟動轉換器，輸出寫檔；後台循環同步進度到 status
-  run_converter "$video" "$tmpzip" "$fps" "$maxsec" "$W" "$H" "$size" "$loopcount" "$x" "$y" "$speed" \
+  run_converter "$video" "$tmpzip" "$fps" "$maxsec" "$W" "$H" "$size" "$loopcount" "$x" "$y" "$speed" "$rotate" "$start" "$end" \
     > "$outfile" 2>&1 &
   cpid=$!
   limit=$(( maxsec * 2 + 180 ))
@@ -282,10 +295,13 @@ cmd_do_convert() {
   set_status y_pct "$y"
   set_status pos_mode "$posmode"
   set_status speed_pct "$speed"
+  set_status rotate_deg "$rotate"
+  set_status trim_start "$start"
+  set_status trim_end "$end"
   set_status progress 100
   set_status error ""
   set_status converting 0
-  log "installed frames=$frames size=$(stat -c %s "$BOOTZIP" 2>/dev/null)"
+  log "installed frames=$frames size=$(stat -c %s "$BOOTZIP" 2>/dev/null) rotate=$rotate trim=${start}-${end}"
   rm -rf "$DATA/.work" 2>/dev/null
   echo "OK installed"
 }
@@ -296,13 +312,22 @@ cmd_restore() {
   echo "OK restored"
 }
 
+cmd_probe() {
+  # cmd_probe <video|gif> → 輸出 key=value 元資料（供 WebUI 設定截取範圍）
+  local video="$1"
+  [ -f "$video" ] || { echo "ERROR video_not_found"; exit 1; }
+  app_process -Djava.class.path="$JAR" /system/bin \
+    com.yuzlyn.bootanim.Video2Boot probe "$video" 2>&1
+}
+
 case "$1" in
   status) cmd_status ;;
   convert) shift; cmd_convert "$@" ;;
   _do_convert) shift; cmd_do_convert "$@" ;;
+  probe) shift; cmd_probe "$@" ;;
   restore) cmd_restore ;;
   *)
-    echo "usage: bootctl status|convert|restore"
+    echo "usage: bootctl status|convert|probe|restore"
     exit 2
     ;;
 esac

@@ -35,8 +35,13 @@ const TRANSLATIONS = {
     animSize: "动画大小",
     loopCount: "循环次数",
     loopTimes: "{count} 次",
+    loopUnit: "次",
     loopStatus: "循环 {count} 次",
     playbackSpeed: "播放速度",
+    rotate: "旋转",
+    trimStart: "开始时间",
+    trimEnd: "结束时间",
+    clipStatus: "截取 {start}-{end} 秒",
     position: "位置",
     posDefault: "默认（黄金分割点）",
     posCustom: "自定义",
@@ -130,8 +135,13 @@ const TRANSLATIONS = {
     animSize: "動畫大小",
     loopCount: "循環次數",
     loopTimes: "{count} 次",
+    loopUnit: "次",
     loopStatus: "循環 {count} 次",
     playbackSpeed: "播放速度",
+    rotate: "旋轉",
+    trimStart: "開始時間",
+    trimEnd: "結束時間",
+    clipStatus: "截取 {start}–{end} 秒",
     position: "位置",
     posDefault: "預設（黃金分割點）",
     posCustom: "自訂",
@@ -225,8 +235,13 @@ const TRANSLATIONS = {
     animSize: "Animation size",
     loopCount: "Loop count",
     loopTimes: "{count} times",
+    loopUnit: "times",
     loopStatus: "loops {count} times",
     playbackSpeed: "Playback speed",
+    rotate: "Rotation",
+    trimStart: "Start time",
+    trimEnd: "End time",
+    clipStatus: "clip {start}-{end}s",
     position: "Position",
     posDefault: "Default (golden point)",
     posCustom: "Custom",
@@ -423,6 +438,159 @@ function formatSpeed(pct) {
   return `${text}×`;
 }
 
+// ---------------- 旋轉 / 截取 ----------------
+function formatSeconds(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0";
+  const rounded = Math.round(n * 10) / 10;
+  return String(Number.isInteger(rounded) ? Math.round(rounded) : rounded);
+}
+
+function clampTrim(value, lo, hi) {
+  if (!(value >= lo)) return lo;
+  if (value > hi) return hi;
+  return value;
+}
+
+/** 數值輸入框 → 滑桿：clamp 至 min/max 並吸附至 step；回傳是否成功。 */
+function numberToSlider(number, slider) {
+  const value = parseFloat(number.value);
+  if (!Number.isFinite(value)) {
+    number.value = String(slider.value); // 無效輸入：還原為目前滑桿值
+    return false;
+  }
+  const min = Number(slider.min) || 0;
+  const max = Number(slider.max) || 100;
+  const step = Number(slider.step) || 1;
+  let snapped = clampTrim(value, min, max);
+  snapped = min + Math.round((snapped - min) / step) * step;
+  snapped = clampTrim(snapped, min, max);
+  slider.value = String(snapped);
+  return true;
+}
+
+/** 播放速度：滑桿 25-400（百分比）⇄ 輸入框 0.25-4（倍率）。 */
+function speedToNumber() {
+  const pct = Number(speedSlider.value) || 100;
+  return String(Math.round((pct / 100) * 100) / 100);
+}
+
+function speedToSlider() {
+  const rate = parseFloat(speedNumber.value);
+  if (!Number.isFinite(rate)) {
+    speedNumber.value = speedToNumber(); // 無效輸入：還原為目前值
+    return;
+  }
+  let pct = clampTrim(rate * 100, 25, 400);
+  pct = 25 + Math.round((pct - 25) / 25) * 25;
+  pct = clampTrim(pct, 25, 400);
+  speedSlider.value = String(pct);
+}
+
+function updateTrimBounds() {
+  if (!trimReady) return;
+  const dur = trimDuration;
+  const step = Number(trimEndSlider.step) || 0.5;
+  const start = clampTrim(Number(trimStartSlider.value) || 0, 0, Math.max(0, dur - step));
+  const end = clampTrim(Number(trimEndSlider.value) || dur, Math.min(dur, start + step), dur);
+  trimStartSlider.value = String(start);
+  trimEndSlider.value = String(end);
+  trimStartSlider.min = "0";
+  trimStartSlider.max = String(Math.max(0, end - step));
+  trimEndSlider.min = String(Math.min(dur, start + step));
+  trimEndSlider.max = String(dur);
+  // 同步數值輸入框（範圍/步進/顯示值）
+  for (const [number, slider] of [[trimStartNumber, trimStartSlider], [trimEndNumber, trimEndSlider]]) {
+    number.min = slider.min;
+    number.max = slider.max;
+    number.step = slider.step;
+    number.value = formatSeconds(slider.value);
+  }
+}
+
+/** 截取範圍保守上限（總時長未知時使用；轉換時以實際結尾自動截斷）。 */
+const TRIM_FALLBACK_SEC = 120;
+
+function enableTrimControls(duration) {
+  const dur = Number(duration);
+  trimDuration = dur > 0 ? dur : TRIM_FALLBACK_SEC; // 未知時用保守上限，仍可拖動截取
+  const upper = trimDuration;
+  const step = upper > 1800 ? 10 : upper > 600 ? 5 : upper > 120 ? 1 : 0.5;
+  trimStartSlider.step = String(step);
+  trimEndSlider.step = String(step);
+  trimStartSlider.value = "0";
+  trimEndSlider.value = String(upper); // 預設至上限（視為不截取）
+  trimReady = true;
+  trimStartRow.classList.remove("hidden");
+  trimEndRow.classList.remove("hidden");
+  updateTrimBounds();
+}
+
+function disableTrimControls() {
+  trimReady = false;
+  trimDuration = 0;
+  trimStartRow.classList.add("hidden");
+  trimEndRow.classList.add("hidden");
+  trimStartSlider.value = "0";
+  trimEndSlider.value = "0";
+  trimStartNumber.value = "0";
+  trimEndNumber.value = "0";
+}
+
+let trimDuration = 0;   // 截取範圍上限（秒）；未知時為 TRIM_FALLBACK_SEC
+let trimReady = false;  // 截取滑桿是否已可用
+let trimSelectionSeq = 0;
+let videoMetadataDuration = 0;
+let durationWaiters = [];
+
+function notifyVideoMetadata() {
+  const raw = uploadPreviewVideo.duration;
+  videoMetadataDuration = Number.isFinite(raw) && raw > 0 ? raw : 0;
+  for (const resolve of durationWaiters) resolve(videoMetadataDuration);
+  durationWaiters = [];
+}
+
+function waitVideoMetadata(timeoutMs) {
+  if (uploadPreviewVideo.readyState >= 1) {
+    const raw = uploadPreviewVideo.duration;
+    return Promise.resolve(Number.isFinite(raw) && raw > 0 ? raw : 0);
+  }
+  return new Promise((resolve) => {
+    durationWaiters.push(resolve);
+    window.setTimeout(() => resolve(videoMetadataDuration), timeoutMs);
+  });
+}
+
+async function probeDuration(path) {
+  try {
+    const output = await exec(`sh ${shellQuote(bootctl)} probe ${shellQuote(path)}`, { timeout: 30000 });
+    const props = parseProperties(output);
+    if ((props.type === "video" || props.type === "gif") && Number(props.duration) > 0) return Number(props.duration);
+  } catch (error) {
+    console.error(error.message);
+  }
+  return 0;
+}
+
+/** 選擇檔案後準備截取範圍：影片用總時長，GIF 與時長未知時用保守上限。 */
+async function prepareTrim(fileLike) {
+  const seq = ++trimSelectionSeq;
+  disableTrimControls();
+  if (!fileLike) return;
+  const name = String(fileLike.name || "");
+  const isGif = name.toLowerCase().endsWith(".gif");
+  let duration = 0;
+  if (fileLike.isPath) {
+    duration = await probeDuration(fileLike.path); // 影片與 GIF 皆可 probe 總時長
+  } else if (isGif) {
+    duration = 0; // 瀏覽器無法讀取 GIF 總時長 → 使用保守上限
+  } else {
+    duration = await waitVideoMetadata(3000);
+  }
+  if (seq !== trimSelectionSeq) return; // 使用者已更換檔案
+  enableTrimControls(duration);
+}
+
 function shellQuote(value) {
   return `'${String(value).replaceAll("'", `'\\''`)}'`;
 }
@@ -447,23 +615,31 @@ const videoUpload = document.querySelector("#video-upload");
 const convertButton = document.querySelector("#convert-button");
 const convertProgress = document.querySelector("#convert-progress");
 const fpsSlider = document.querySelector("#fps-slider");
-const fpsValue = document.querySelector("#fps-value");
+const fpsNumber = document.querySelector("#fps-number");
 const durationSlider = document.querySelector("#duration-slider");
-const durationValue = document.querySelector("#duration-value");
+const durationNumber = document.querySelector("#duration-number");
 const sizeMode = document.querySelector("#size-mode");
 const customSizeRow = document.querySelector("#custom-size-row");
 const customSize = document.querySelector("#custom-size");
 const sizeSlider = document.querySelector("#size-slider");
-const sizeValue = document.querySelector("#size-value");
+const sizeNumber = document.querySelector("#size-number");
 const loopSlider = document.querySelector("#loop-slider");
-const loopValue = document.querySelector("#loop-value");
+const loopNumber = document.querySelector("#loop-number");
 const speedSlider = document.querySelector("#speed-slider");
-const speedValue = document.querySelector("#speed-value");
+const speedNumber = document.querySelector("#speed-number");
+const rotateSlider = document.querySelector("#rotate-slider");
+const rotateNumber = document.querySelector("#rotate-number");
+const trimStartRow = document.querySelector("#trim-start-row");
+const trimEndRow = document.querySelector("#trim-end-row");
+const trimStartSlider = document.querySelector("#trim-start-slider");
+const trimEndSlider = document.querySelector("#trim-end-slider");
+const trimStartNumber = document.querySelector("#trim-start-number");
+const trimEndNumber = document.querySelector("#trim-end-number");
 const positionMode = document.querySelector("#position-mode");
 const xSlider = document.querySelector("#x-slider");
-const xValue = document.querySelector("#x-value");
+const xNumber = document.querySelector("#x-number");
 const ySlider = document.querySelector("#y-slider");
-const yValue = document.querySelector("#y-value");
+const yNumber = document.querySelector("#y-number");
 const positionCustomRows = document.querySelectorAll(".position-custom-row");
 const uploadPreviewWrap = document.querySelector("#upload-preview-wrap");
 const uploadPreviewScreen = document.querySelector("#upload-preview-screen");
@@ -545,9 +721,12 @@ function applyStatus(s) {
     const sizePct = s.size_pct && s.size_pct !== "-" ? ` · ${s.size_pct}%` : "";
     const loop = s.loop_count && s.loop_count !== "-" && Number(s.loop_count) > 1 ? ` · ${t("loopStatus", { count: s.loop_count })}` : "";
     const spd = s.speed_pct && s.speed_pct !== "-" && String(s.speed_pct) !== "100" ? ` · ${formatSpeed(s.speed_pct)}` : "";
+    const rot = s.rotate_deg && Number(s.rotate_deg) > 0 ? ` · ${Number(s.rotate_deg)}°` : "";
+    const clip = s.trim_start !== undefined && Number(s.trim_end) > 0
+      ? ` · ${t("clipStatus", { start: formatSeconds(s.trim_start), end: formatSeconds(s.trim_end) })}` : "";
     const pos = s.pos_mode === "custom" ? ` · ${s.x_pct}%·${s.y_pct}%` : "";
     const fileSize = s.size && s.size !== "-" ? ` · ${formatBytes(s.size)}` : "";
-    currentStatus.textContent = `${frames}${fps}${box}${sizePct}${loop}${spd}${pos}${fileSize}`;
+    currentStatus.textContent = `${frames}${fps}${box}${sizePct}${loop}${spd}${rot}${clip}${pos}${fileSize}`;
     if (wasConverting && String(s.converting) !== "1") loadPreview();
   } else {
     installedChip.classList.add("hidden");
@@ -654,8 +833,20 @@ async function startConvert() {
     const yPct = customPos ? (Number(ySlider.value) || 38) : 38;
     const posMode = customPos ? "custom" : "default";
     const speedPct = Number(speedSlider.value) || 100;
+    const rotateDeg = Math.min(360, Math.max(0, Math.round(Number(rotateSlider.value) || 0)));
+    let trimStart = 0;
+    let trimEnd = 0;
+    if (trimReady && trimDuration > 0) {
+      const start = Number(trimStartSlider.value) || 0;
+      const end = Number(trimEndSlider.value) || 0;
+      // 開始時間 > 0 或結束時間未到影片結尾才算真正截取
+      if (start > 0 || end < trimDuration - 0.001) {
+        trimStart = start;
+        trimEnd = end;
+      }
+    }
     const result = await exec(
-      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)} ${sizePct} ${loopCount} ${xPct} ${yPct} ${shellQuote(posMode)} ${speedPct}`,
+      `sh ${shellQuote(bootctl)} convert ${shellQuote(videoPath)} ${fps} ${maxsec} ${shellQuote(box)} ${sizePct} ${loopCount} ${xPct} ${yPct} ${shellQuote(posMode)} ${speedPct} ${rotateDeg} ${trimStart} ${trimEnd}`,
       { timeout: 30000 },
     );
     if (!result.includes("OK started")) throw new Error(result.includes("ERROR busy") ? "busy" : "start_failed");
@@ -791,12 +982,14 @@ function updatePreviewScreenSize(swRaw, shRaw) {
 
 function applyPreviewGeometry() {
   const pct = Number(sizeSlider.value) || 100;
-  sizeValue.textContent = `${pct}%`;
+  sizeNumber.value = String(pct);
+  const rot = Number(rotateSlider.value) || 0;
+  rotateNumber.value = String(rot);
   const custom = positionMode.value === "custom";
   const x = custom ? (Number(xSlider.value) || 50) : 50;
   const y = custom ? (Number(ySlider.value) || 38) : 38;
-  xValue.textContent = `${x}%`;
-  yValue.textContent = `${y}%`;
+  xNumber.value = String(x);
+  yNumber.value = String(y);
   const { w: sw, h: sh } = previewScreenPx;
   if (sw <= 0 || sh <= 0) return;
   const mw = Math.max(1, Math.round((sw * pct) / 100));
@@ -805,6 +998,19 @@ function applyPreviewGeometry() {
   uploadPreviewSlot.style.height = `${mh}px`;
   uploadPreviewSlot.style.left = `${Math.round((sw * x) / 100 - mw / 2)}px`;
   uploadPreviewSlot.style.top = `${Math.round((sh * y) / 100 - mh / 2)}px`;
+  // 旋轉即時預覽：旋轉後等比縮放至槽位內（模擬轉換結果的黑邊留白）
+  let transform = "";
+  if (rot !== 0) {
+    const rad = (rot * Math.PI) / 180;
+    const cos = Math.abs(Math.cos(rad));
+    const sin = Math.abs(Math.sin(rad));
+    const bw = mw * cos + mh * sin;
+    const bh = mw * sin + mh * cos;
+    const fit = Math.min(mw / bw, mh / bh);
+    transform = `rotate(${rot}deg) scale(${fit})`;
+  }
+  uploadPreviewImg.style.transform = transform;
+  uploadPreviewVideo.style.transform = transform;
 }
 
 function onPreviewMediaLoaded(w, h) {
@@ -837,6 +1043,7 @@ function showUploadPreview(fileLike) {
 }
 
 function selectVideo(fileLike) {
+  disableTrimControls(); // 先隱藏上一檔的截取範圍，待確認時長後再啟用
   if (!fileLike || fileLike.size <= 0) {
     showUploadPreview(null);
     showMessage(t("fileEmpty"));
@@ -859,6 +1066,7 @@ function selectVideo(fileLike) {
   videoName.textContent = `${source} · ${formatBytes(fileLike.size)}`;
   convertButton.disabled = uploadInProgress;
   showUploadPreview(fileLike);
+  prepareTrim(fileLike);
   showMessage(t("fileSelected"));
 }
 
@@ -885,33 +1093,71 @@ function init() {
   });
 
   fpsSlider.addEventListener("input", () => {
-    fpsValue.textContent = `${fpsSlider.value} fps`;
+    fpsNumber.value = fpsSlider.value;
+  });
+  fpsNumber.addEventListener("change", () => {
+    if (numberToSlider(fpsNumber, fpsSlider)) fpsNumber.value = fpsSlider.value;
   });
   durationSlider.addEventListener("input", () => {
-    durationValue.textContent = `${durationSlider.value} ${t("secondsUnit")}`;
+    durationNumber.value = durationSlider.value;
+  });
+  durationNumber.addEventListener("change", () => {
+    if (numberToSlider(durationNumber, durationSlider)) durationNumber.value = durationSlider.value;
   });
   sizeMode.addEventListener("change", () => {
     customSizeRow.classList.toggle("hidden", sizeMode.value !== "custom");
   });
 
   sizeSlider.addEventListener("input", applyPreviewGeometry);
+  sizeNumber.addEventListener("change", () => {
+    if (numberToSlider(sizeNumber, sizeSlider)) applyPreviewGeometry();
+  });
   loopSlider.addEventListener("input", () => {
-    loopValue.textContent = t("loopTimes", { count: loopSlider.value });
+    loopNumber.value = loopSlider.value;
     uploadPreviewVideo.loop = Number(loopSlider.value) > 1;
   });
+  loopNumber.addEventListener("change", () => {
+    if (numberToSlider(loopNumber, loopSlider)) {
+      loopNumber.value = loopSlider.value;
+      uploadPreviewVideo.loop = Number(loopSlider.value) > 1;
+    }
+  });
   speedSlider.addEventListener("input", () => {
-    speedValue.textContent = formatSpeed(speedSlider.value);
+    speedNumber.value = speedToNumber();
+  });
+  speedNumber.addEventListener("change", () => {
+    speedToSlider();
+    speedNumber.value = speedToNumber();
+  });
+  rotateSlider.addEventListener("input", applyPreviewGeometry);
+  rotateNumber.addEventListener("change", () => {
+    if (numberToSlider(rotateNumber, rotateSlider)) applyPreviewGeometry();
+  });
+  trimStartSlider.addEventListener("input", updateTrimBounds);
+  trimEndSlider.addEventListener("input", updateTrimBounds);
+  trimStartNumber.addEventListener("change", () => {
+    if (numberToSlider(trimStartNumber, trimStartSlider)) updateTrimBounds();
+  });
+  trimEndNumber.addEventListener("change", () => {
+    if (numberToSlider(trimEndNumber, trimEndSlider)) updateTrimBounds();
   });
   positionMode.addEventListener("change", () => {
     positionCustomRows.forEach((row) => row.classList.toggle("hidden", positionMode.value !== "custom"));
     applyPreviewGeometry();
   });
   xSlider.addEventListener("input", applyPreviewGeometry);
+  xNumber.addEventListener("change", () => {
+    if (numberToSlider(xNumber, xSlider)) applyPreviewGeometry();
+  });
   ySlider.addEventListener("input", applyPreviewGeometry);
+  yNumber.addEventListener("change", () => {
+    if (numberToSlider(yNumber, ySlider)) applyPreviewGeometry();
+  });
   uploadPreviewImg.addEventListener("load", () => {
     onPreviewMediaLoaded(uploadPreviewImg.naturalWidth, uploadPreviewImg.naturalHeight);
   });
   uploadPreviewVideo.addEventListener("loadedmetadata", () => {
+    notifyVideoMetadata();
     onPreviewMediaLoaded(uploadPreviewVideo.videoWidth, uploadPreviewVideo.videoHeight);
   });
 

@@ -7,11 +7,11 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>開機動畫 for ColorOS</title>
     <link rel="stylesheet" href="vendor/mdui.css">
-    <link rel="stylesheet" href="styles.css?v=171">
+    <link rel="stylesheet" href="styles.css?v=174">
     <script src="vendor/mdui.global.js"></script>
     <script src="vendor/material-kolor.js"></script>
-    <script src="theme-cache.js?v=171"></script>
-    <script src="app.js?v=171" defer></script>
+    <script src="theme-cache.js?v=174"></script>
+    <script src="app.js?v=174" defer></script>
   </head>
   <body>
     <mdui-top-app-bar variant="small" scroll-behavior="elevate">
@@ -93,14 +93,16 @@
               <span data-i18n="frameRate">幀率</span>
               <div class="option-control">
                 <input id="fps-slider" type="range" min="10" max="60" step="1" value="24" aria-label="幀率" data-i18n-aria-label="frameRate">
-                <strong id="fps-value">24 fps</strong>
+                <input id="fps-number" type="number" min="10" max="60" step="1" value="24" inputmode="numeric" class="option-number" aria-label="幀率" data-i18n-aria-label="frameRate">
+                <span class="option-unit">fps</span>
               </div>
             </div>
             <div class="option-row">
               <span data-i18n="durationCap">時長上限</span>
               <div class="option-control">
                 <input id="duration-slider" type="range" min="3" max="30" step="1" value="10" aria-label="時長上限" data-i18n-aria-label="durationCap">
-                <strong id="duration-value">10 秒</strong>
+                <input id="duration-number" type="number" min="3" max="30" step="1" value="10" inputmode="numeric" class="option-number" aria-label="時長上限" data-i18n-aria-label="durationCap">
+                <span class="option-unit" data-i18n="secondsUnit">秒</span>
               </div>
             </div>
             <div class="option-row">
@@ -122,21 +124,48 @@
               <span data-i18n="animSize">動畫大小</span>
               <div class="option-control">
                 <input id="size-slider" type="range" min="10" max="100" step="5" value="100" aria-label="動畫大小" data-i18n-aria-label="animSize">
-                <strong id="size-value">100%</strong>
+                <input id="size-number" type="number" min="10" max="100" step="5" value="100" inputmode="numeric" class="option-number" aria-label="動畫大小" data-i18n-aria-label="animSize">
+                <span class="option-unit">%</span>
               </div>
             </div>
             <div class="option-row">
               <span data-i18n="loopCount">循環次數</span>
               <div class="option-control">
                 <input id="loop-slider" type="range" min="1" max="20" step="1" value="1" aria-label="循環次數" data-i18n-aria-label="loopCount">
-                <strong id="loop-value">1 次</strong>
+                <input id="loop-number" type="number" min="1" max="20" step="1" value="1" inputmode="numeric" class="option-number" aria-label="循環次數" data-i18n-aria-label="loopCount">
+                <span class="option-unit" data-i18n="loopUnit">次</span>
               </div>
             </div>
             <div class="option-row">
               <span data-i18n="playbackSpeed">播放速度</span>
               <div class="option-control">
                 <input id="speed-slider" type="range" min="25" max="400" step="25" value="100" aria-label="播放速度" data-i18n-aria-label="playbackSpeed">
-                <strong id="speed-value">1×</strong>
+                <input id="speed-number" type="number" min="0.25" max="4" step="0.25" value="1" inputmode="decimal" class="option-number" aria-label="播放速度" data-i18n-aria-label="playbackSpeed">
+                <span class="option-unit">×</span>
+              </div>
+            </div>
+            <div class="option-row">
+              <span data-i18n="rotate">旋轉</span>
+              <div class="option-control">
+                <input id="rotate-slider" type="range" min="0" max="360" step="1" value="0" aria-label="旋轉" data-i18n-aria-label="rotate">
+                <input id="rotate-number" type="number" min="0" max="360" step="1" value="0" inputmode="numeric" class="option-number" aria-label="旋轉" data-i18n-aria-label="rotate">
+                <span class="option-unit">°</span>
+              </div>
+            </div>
+            <div class="option-row trim-row hidden" id="trim-start-row">
+              <span data-i18n="trimStart">開始時間</span>
+              <div class="option-control">
+                <input id="trim-start-slider" type="range" min="0" max="0" step="1" value="0" aria-label="開始時間" data-i18n-aria-label="trimStart">
+                <input id="trim-start-number" type="number" min="0" max="0" step="1" value="0" inputmode="decimal" class="option-number" aria-label="開始時間" data-i18n-aria-label="trimStart">
+                <span class="option-unit" data-i18n="secondsUnit">秒</span>
+              </div>
+            </div>
+            <div class="option-row trim-row hidden" id="trim-end-row">
+              <span data-i18n="trimEnd">結束時間</span>
+              <div class="option-control">
+                <input id="trim-end-slider" type="range" min="0" max="0" step="1" value="0" aria-label="結束時間" data-i18n-aria-label="trimEnd">
+                <input id="trim-end-number" type="number" min="0" max="0" step="1" value="0" inputmode="decimal" class="option-number" aria-label="結束時間" data-i18n-aria-label="trimEnd">
+                <span class="option-unit" data-i18n="secondsUnit">秒</span>
               </div>
             </div>
             <div class="option-row">
@@ -152,14 +181,16 @@
               <span data-i18n="posX">水平位置</span>
               <div class="option-control">
                 <input id="x-slider" type="range" min="0" max="100" step="5" value="50" aria-label="水平位置" data-i18n-aria-label="posX">
-                <strong id="x-value">50%</strong>
+                <input id="x-number" type="number" min="0" max="100" step="5" value="50" inputmode="numeric" class="option-number" aria-label="水平位置" data-i18n-aria-label="posX">
+                <span class="option-unit">%</span>
               </div>
             </div>
             <div class="option-row position-custom-row hidden">
               <span data-i18n="posY">垂直位置</span>
               <div class="option-control">
                 <input id="y-slider" type="range" min="0" max="100" step="5" value="38" aria-label="垂直位置" data-i18n-aria-label="posY">
-                <strong id="y-value">38%</strong>
+                <input id="y-number" type="number" min="0" max="100" step="5" value="38" inputmode="numeric" class="option-number" aria-label="垂直位置" data-i18n-aria-label="posY">
+                <span class="option-unit">%</span>
               </div>
             </div>
           </div>
@@ -260,7 +291,7 @@
       </a>
 
       <footer aria-label="版本信息" data-i18n-aria-label="versionInfo">
-        <span>v1.7.1</span>
+        <span>v1.8.2</span>
         <span aria-hidden="true">·</span>
         <span>yuzlyn</span>
       </footer>

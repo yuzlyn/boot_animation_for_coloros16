@@ -33,7 +33,8 @@ import java.util.zip.ZipOutputStream;
  *
  * Usage: app_process ... com.yuzlyn.bootanim.Video2Boot \
  *        <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> \
- *        [sizePct] [loopCount] [xPct] [yPct] [speedPct]
+ *        [sizePct] [loopCount] [xPct] [yPct] [speedPct] [rotateDeg] \
+ *        [trimStartSec] [trimEndSec]
  *
  * sizePct (10-100, default 100) scales the animation inside the frame box.
  * loopCount (1-20, default 1) plays the animation that many times: the frame
@@ -43,6 +44,17 @@ import java.util.zip.ZipOutputStream;
  * canvas: 50 = horizontal center, 38 ≈ upper golden-ratio point (H/φ²).
  * speedPct (25-400, default 100) scales the desc.txt fps, so the animation
  * plays back at speedPct/100 × speed with the same sampled frames.
+ * rotateDeg (0-360, default 0) additionally rotates every frame clockwise by
+ * that many degrees, so the video can be shown tilted (or upside-down); the
+ * rotated frame is still scaled to fit inside the frame box with its aspect
+ * preserved. The container rotation from the file metadata (e.g. 90° for
+ * landscape videos) is applied automatically on top of it.
+ * trimStartSec / trimEndSec (decimal seconds, default 0 = not set) select a
+ * clip of the source video/GIF: decoding seeks to trimStartSec and stops as
+ * soon as trimEndSec is reached (0 = until the end of the video). Frames
+ * outside the clip are discarded.
+ * Probe mode: `app_process ... Video2Boot probe <file>` prints `key=value`
+ * metadata lines (type/duration/width/height/rotation) for the WebUI.
  * Videos are decoded with MediaCodec (hardware surface preferred), animated
  * GIFs with android.graphics.Movie (Skia GIF codec). Every frame is scaled
  * to fit inside the frame box (aspect preserved) and composited on a black
@@ -66,8 +78,11 @@ public class Video2Boot {
     }
 
     private static int run(String[] args) throws Exception {
+        if (args.length >= 2 && "probe".equals(args[0])) {
+            return probe(args[1]);
+        }
         if (args.length < 6) {
-            System.err.println("usage: <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> [sizePct] [loopCount] [xPct] [yPct] [speedPct]");
+            System.err.println("usage: <input> <outputZip> <fps> <maxSeconds> <frameW> <frameH> [sizePct] [loopCount] [xPct] [yPct] [speedPct] [rotateDeg] [trimStartSec] [trimEndSec]");
             return 2;
         }
         File input = new File(args[0]);
@@ -81,11 +96,17 @@ public class Video2Boot {
         int xPct = clamp(parseInt(args.length > 8 ? args[8] : "50", 50), 0, 100);
         int yPct = clamp(parseInt(args.length > 9 ? args[9] : "38", 38), 0, 100);
         int speedPct = clamp(parseInt(args.length > 10 ? args[10] : "100", 100), 25, 400);
+        int rotateDeg = clamp(parseInt(args.length > 11 ? args[11] : "0", 0), 0, 360);
+        double trimStartSec = Math.max(0.0, parseDouble(args.length > 12 ? args[12] : "0", 0));
+        double trimEndSec = Math.max(0.0, parseDouble(args.length > 13 ? args[13] : "0", 0));
+        long trimStartUs = (long) Math.round(trimStartSec * 1e6);
+        long trimEndUs = (long) Math.round(trimEndSec * 1e6);
 
         System.out.println("INFO input=" + input.getAbsolutePath());
         System.out.println("INFO frame=" + frameW + "x" + frameH + " fps=" + fps + " maxSeconds=" + maxSeconds
                 + " sizePct=" + sizePct + " loopCount=" + loopCount
-                + " pos=" + xPct + "%," + yPct + "% speed=" + speedPct + "%");
+                + " pos=" + xPct + "%," + yPct + "% speed=" + speedPct + "%"
+                + " rotate=" + rotateDeg + "deg trim=" + trimStartSec + "-" + trimEndSec + "s");
         System.out.println("PROGRESS 1");
 
         File workDir = new File(output.getParentFile(), ".convert-" + System.currentTimeMillis());
@@ -95,11 +116,13 @@ public class Video2Boot {
 
         int frameCount;
         if (isGifFile(input)) {
-            GifDecoder gd = new GifDecoder(input, fps, maxSeconds, frameW, frameH, sizePct, xPct, yPct, frameDir);
+            GifDecoder gd = new GifDecoder(input, fps, maxSeconds, frameW, frameH, sizePct, xPct, yPct,
+                    rotateDeg, trimStartUs, trimEndUs, frameDir);
             gd.decode();
             frameCount = gd.frameCount;
         } else {
-            Decoder dec = new Decoder(input, fps, maxSeconds, frameW, frameH, sizePct, xPct, yPct, frameDir);
+            Decoder dec = new Decoder(input, fps, maxSeconds, frameW, frameH, sizePct, xPct, yPct,
+                    rotateDeg, trimStartUs, trimEndUs, frameDir);
             dec.decode();
             frameCount = dec.frameCount;
         }
@@ -115,6 +138,64 @@ public class Video2Boot {
         System.out.println("PROGRESS 100");
         System.out.println("OK " + frameCount + " " + output.length());
         return 0;
+    }
+
+    /** 探測模式：列印 key=value 元資料，供 WebUI 顯示影片總時長（截取滑桿上限）。 */
+    private static int probe(String path) {
+        File f = new File(path);
+        if (!f.isFile()) {
+            System.err.println("ERROR file not found: " + path);
+            return 2;
+        }
+        try {
+            if (isGifFile(f)) {
+                System.out.println("type=gif");
+                // GIF 總時長：掃描播放延遲（僅限合理大小，避免大檔全量解碼）
+                if (f.length() > 0 && f.length() <= 8L * 1024 * 1024) {
+                    try {
+                        Movie m = Movie.decodeFile(f.getAbsolutePath());
+                        if (m != null && m.duration() > 0) {
+                            System.out.printf(Locale.ROOT, "duration=%.3f%n", m.duration() / 1000.0);
+                        }
+                    } catch (Throwable t) {
+                        // duration 不可得時僅輸出 type=gif
+                    }
+                }
+                return 0;
+            }
+        } catch (IOException e) {
+            System.err.println("ERROR " + e.getMessage());
+            return 2;
+        }
+        MediaExtractor ex = new MediaExtractor();
+        try {
+            ex.setDataSource(f.getAbsolutePath());
+            for (int i = 0; i < ex.getTrackCount(); i++) {
+                MediaFormat fmt = ex.getTrackFormat(i);
+                String mime = fmt.getString(MediaFormat.KEY_MIME);
+                if (mime == null || !mime.startsWith("video/")) continue;
+                long durUs = 0;
+                if (fmt.containsKey(MediaFormat.KEY_DURATION)) {
+                    durUs = Math.max(0, fmt.getLong(MediaFormat.KEY_DURATION));
+                }
+                int vw = fmt.containsKey(MediaFormat.KEY_WIDTH) ? fmt.getInteger(MediaFormat.KEY_WIDTH) : 0;
+                int vh = fmt.containsKey(MediaFormat.KEY_HEIGHT) ? fmt.getInteger(MediaFormat.KEY_HEIGHT) : 0;
+                int rot = fmt.containsKey(MediaFormat.KEY_ROTATION) ? fmt.getInteger(MediaFormat.KEY_ROTATION) : 0;
+                System.out.println("type=video");
+                System.out.printf(Locale.ROOT, "duration=%.3f%n", durUs / 1e6);
+                System.out.println("width=" + vw);
+                System.out.println("height=" + vh);
+                System.out.println("rotation=" + rot);
+                ex.release();
+                return 0;
+            }
+            ex.release();
+            System.err.println("ERROR no video track");
+            return 2;
+        } catch (Throwable t) {
+            t.printStackTrace(System.err);
+            return 2;
+        }
     }
 
     private static void writeZip(File output, int w, int h, int fps, File frameDir, int frameCount, int totalFrames, int speedPct) throws IOException {
@@ -195,6 +276,13 @@ public class Video2Boot {
         try { return Integer.parseInt(s.trim()); } catch (Throwable t) { return def; }
     }
 
+    private static double parseDouble(String s, double def) {
+        try {
+            double v = Double.parseDouble(s.trim());
+            return Double.isNaN(v) ? def : v;
+        } catch (Throwable t) { return def; }
+    }
+
     private static int clamp(int v, int lo, int hi) { return Math.max(lo, Math.min(hi, v)); }
 
     private static int even(int v, int lo) {
@@ -219,23 +307,52 @@ public class Video2Boot {
     /**
      * 合成到黑底畫布：動畫中心位於 (xPct%, yPct%) 畫布位置，
      * 貼邊時自動收斂以免超出畫布。sizePct 控制動畫大小（10-100，100=鋪滿）。
+     * rotateDeg 為 0 時走原快速路徑；非 0 時先繞中心旋轉再等比縮放至畫布內，
+     * 單次取樣完成（旋轉後內容可能因斜放而縮小，四周留黑）。
      */
-    static Bitmap placeFrame(Bitmap b, int frameW, int frameH, int sizePct, int xPct, int yPct) {
+    static Bitmap placeFrame(Bitmap b, int frameW, int frameH, int sizePct, int xPct, int yPct, float rotateDeg) {
         Bitmap out = Bitmap.createBitmap(frameW, frameH, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
         c.drawColor(Color.BLACK);
-        float scale = Math.min((float) frameW / b.getWidth(), (float) frameH / b.getHeight())
-                * (sizePct / 100f);
-        int dw = Math.max(1, (int) (b.getWidth() * scale));
-        int dh = Math.max(1, (int) (b.getHeight() * scale));
+        int w = b.getWidth();
+        int h = b.getHeight();
+        float rot = rotateDeg % 360f;
+        Paint p = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+        if (rot == 0f) {
+            float scale = Math.min((float) frameW / w, (float) frameH / h) * (sizePct / 100f);
+            int dw = Math.max(1, (int) (w * scale));
+            int dh = Math.max(1, (int) (h * scale));
+            int left = (int) Math.round(frameW * (xPct / 100.0)) - dw / 2;
+            int top = (int) Math.round(frameH * (yPct / 100.0)) - dh / 2;
+            if (left < 0) left = 0;
+            if (left > frameW - dw) left = frameW - dw;
+            if (top < 0) top = 0;
+            if (top > frameH - dh) top = frameH - dh;
+            c.drawBitmap(b, null, new Rect(left, top, left + dw, top + dh), p);
+            return out;
+        }
+        double rad = Math.toRadians(rot);
+        double cosA = Math.abs(Math.cos(rad));
+        double sinA = Math.abs(Math.sin(rad));
+        // 繞中心旋轉後內容的包圍盒尺寸
+        double bw = w * cosA + h * sinA;
+        double bh = w * sinA + h * cosA;
+        float scale = (float) Math.min((frameW * (sizePct / 100.0)) / bw, (frameH * (sizePct / 100.0)) / bh);
+        int dw = Math.max(1, (int) Math.round(bw * scale));
+        int dh = Math.max(1, (int) Math.round(bh * scale));
         int left = (int) Math.round(frameW * (xPct / 100.0)) - dw / 2;
         int top = (int) Math.round(frameH * (yPct / 100.0)) - dh / 2;
         if (left < 0) left = 0;
         if (left > frameW - dw) left = frameW - dw;
         if (top < 0) top = 0;
         if (top > frameH - dh) top = frameH - dh;
-        Paint p = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
-        c.drawBitmap(b, null, new Rect(left, top, left + dw, top + dh), p);
+        float cx = w / 2f;
+        float cy = h / 2f;
+        Matrix m = new Matrix();
+        m.postRotate(rot, cx, cy);
+        m.postScale(scale, scale, cx, cy);
+        m.postTranslate(left + dw / 2f - cx, top + dh / 2f - cy);
+        c.drawBitmap(b, m, p);
         return out;
     }
 
@@ -254,11 +371,16 @@ public class Video2Boot {
         final int frameW, frameH;
         final int sizePct;
         final int xPct, yPct;
+        final int rotateDeg;
+        final long trimStartUs;
+        final long trimEndUs;
         final File frameDir;
         int frameCount = 0;
+        int maxFrames = 0;
         int rotation = 0;
 
-        Decoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, int xPct, int yPct, File frameDir) {
+        Decoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, int xPct, int yPct,
+                int rotateDeg, long trimStartUs, long trimEndUs, File frameDir) {
             this.input = input;
             this.fps = fps;
             this.maxSeconds = maxSeconds;
@@ -267,6 +389,9 @@ public class Video2Boot {
             this.sizePct = sizePct;
             this.xPct = xPct;
             this.yPct = yPct;
+            this.rotateDeg = rotateDeg;
+            this.trimStartUs = trimStartUs;
+            this.trimEndUs = trimEndUs;
             this.frameDir = frameDir;
         }
 
@@ -289,8 +414,16 @@ public class Video2Boot {
             if (fmt.containsKey(MediaFormat.KEY_ROTATION)) rotation = fmt.getInteger(MediaFormat.KEY_ROTATION);
             int vw = fmt.containsKey(MediaFormat.KEY_WIDTH) ? fmt.getInteger(MediaFormat.KEY_WIDTH) : 0;
             int vh = fmt.containsKey(MediaFormat.KEY_HEIGHT) ? fmt.getInteger(MediaFormat.KEY_HEIGHT) : 0;
-            System.out.println("INFO video=" + vw + "x" + vh + " mime=" + mime + " rotation=" + rotation);
+            System.out.println("INFO video=" + vw + "x" + vh + " mime=" + mime + " rotation=" + rotation
+                    + " rotate=" + rotateDeg + "deg trim=" + (trimStartUs / 1e6) + "-" + (trimEndUs / 1e6) + "s");
             ex.release();
+
+            // 幀數預算：不超過幀上限與 maxSeconds，若截取視窗更短則以視窗長度為準
+            int budget = fps * maxSeconds;
+            if (trimEndUs > trimStartUs && trimEndUs > 0) {
+                budget = Math.min(budget, Math.max(1, (int) Math.ceil((trimEndUs - trimStartUs) * fps / 1e6)));
+            }
+            maxFrames = Math.min(MAX_FRAMES, budget);
 
             // 優先走硬解碼 Surface 快路徑，失敗再退回 bytebuffer + Image
             try {
@@ -303,6 +436,16 @@ public class Video2Boot {
             if (frameCount == 0) throw new IOException("no frames decoded - unsupported video codec?");
         }
 
+        /** 總旋轉角度：檔案內建的顯示旋轉 + 使用者額外旋轉（順時針）。 */
+        int totalRotateDeg() {
+            return (rotation + rotateDeg) % 360;
+        }
+
+        /** 截取開始時間 > 0 時，跳到該時間點之前的關鍵幀再開始解碼，避免從頭解到尾。 */
+        void maybeSeek(MediaExtractor ex) {
+            if (trimStartUs > 0) ex.seekTo(trimStartUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+        }
+
         /** 快路徑：GPU 渲染到 Surface（YUV->RGBA 由 GPU 完成），ImageReader 取回縮放。 */
         void decodeSurface(MediaFormat fmt, String mime) throws Exception {
             int vw = fmt.containsKey(MediaFormat.KEY_WIDTH) ? fmt.getInteger(MediaFormat.KEY_WIDTH) : 0;
@@ -310,11 +453,11 @@ public class Video2Boot {
             if (vw <= 0 || vh <= 0) throw new IOException("bad video size");
 
             MediaExtractor ex = openExtractor();
+            maybeSeek(ex);
             ImageReader reader = ImageReader.newInstance(vw, vh, PixelFormat.RGBA_8888, 4);
             MediaCodec codec = openCodec(mime);
             boolean eos = false;
             long nextPts = -1;
-            int maxFrames = Math.min(MAX_FRAMES, fps * maxSeconds);
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
             long loopStart = System.currentTimeMillis();
 
@@ -350,17 +493,12 @@ public class Video2Boot {
                             if (img != null) {
                                 try {
                                     long pts = img.getTimestamp() / 1000L; // ns -> us
+                                    // 截取視窗：視窗之前的幀直接丟棄，到達結束時間即完成解碼
+                                    if (pts < trimStartUs || (trimEndUs > 0 && pts >= trimEndUs)) continue;
                                     if (pts >= nextPts) {
                                         if (nextPts < 0) nextPts = pts;
                                         Bitmap b = rgbaToBitmap(img);
-                                        if (rotation != 0) {
-                                            Matrix m = new Matrix();
-                                            m.postRotate(rotation);
-                                            Bitmap r = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), m, true);
-                                            b.recycle();
-                                            b = r;
-                                        }
-                                        Bitmap framed = placeFrame(b, frameW, frameH, sizePct, xPct, yPct);
+                                        Bitmap framed = placeFrame(b, frameW, frameH, sizePct, xPct, yPct, totalRotateDeg());
                                         b.recycle();
                                         File out = new File(frameDir, String.format("%04d.jpg", frameCount + 1));
                                         writeJpeg(framed, out);
@@ -398,10 +536,10 @@ public class Video2Boot {
         /** 慢路徑：bytebuffer + getOutputImage（軟解碼回退）。 */
         void decodeByteBuffer(MediaFormat fmt, String mime) throws Exception {
             MediaExtractor ex = openExtractor();
+            maybeSeek(ex);
             MediaCodec codec = openCodec(mime);
             boolean eos = false;
             long nextPts = -1;
-            int maxFrames = Math.min(MAX_FRAMES, fps * maxSeconds);
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
             long loopStart = System.currentTimeMillis();
 
@@ -425,37 +563,42 @@ public class Video2Boot {
                     int outIdx = codec.dequeueOutputBuffer(info, 20000);
                     if (outIdx >= 0) {
                         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) break;
-                        if (info.size > 0 && info.presentationTimeUs >= nextPts) {
-                            Image img = codec.getOutputImage(outIdx);
-                            if (img != null) {
-                                try {
-                                    if (nextPts < 0) nextPts = info.presentationTimeUs;
-                                    Bitmap b;
-                                    if (img.getFormat() == ImageFormat.YUV_420_888) {
-                                        b = imageToBitmapScaled(img, frameW, frameH);
-                                    } else {
-                                        b = imageToBitmapGeneric(img);
-                                    }
-                                    if (rotation != 0) {
-                                        Matrix m = new Matrix();
-                                        m.postRotate(rotation);
-                                        Bitmap r = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), m, true);
+                        if (info.size > 0) {
+                            long pts = info.presentationTimeUs;
+                            // 截取視窗：視窗之前的幀直接丟棄，到達結束時間即完成解碼
+                            if (pts < trimStartUs) {
+                                codec.releaseOutputBuffer(outIdx, false);
+                                continue;
+                            }
+                            if (trimEndUs > 0 && pts >= trimEndUs) {
+                                codec.releaseOutputBuffer(outIdx, false);
+                                break;
+                            }
+                            if (pts >= nextPts) {
+                                Image img = codec.getOutputImage(outIdx);
+                                if (img != null) {
+                                    try {
+                                        if (nextPts < 0) nextPts = pts;
+                                        Bitmap b;
+                                        if (img.getFormat() == ImageFormat.YUV_420_888) {
+                                            b = imageToBitmapScaled(img, frameW, frameH);
+                                        } else {
+                                            b = imageToBitmapGeneric(img);
+                                        }
+                                        Bitmap framed = placeFrame(b, frameW, frameH, sizePct, xPct, yPct, totalRotateDeg());
                                         b.recycle();
-                                        b = r;
+                                        File out = new File(frameDir, String.format("%04d.jpg", frameCount + 1));
+                                        writeJpeg(framed, out);
+                                        framed.recycle();
+                                        frameCount++;
+                                        nextPts += 1000000L / fps;
+                                        if (frameCount >= maxFrames) break;
+                                        if (frameCount % 10 == 0) {
+                                            System.out.println("PROGRESS " + (1 + 86 * frameCount / maxFrames));
+                                        }
+                                    } finally {
+                                        img.close();
                                     }
-                                    Bitmap framed = placeFrame(b, frameW, frameH, sizePct, xPct, yPct);
-                                    b.recycle();
-                                    File out = new File(frameDir, String.format("%04d.jpg", frameCount + 1));
-                                    writeJpeg(framed, out);
-                                    framed.recycle();
-                                    frameCount++;
-                                    nextPts += 1000000L / fps;
-                                    if (frameCount >= maxFrames) break;
-                                    if (frameCount % 10 == 0) {
-                                        System.out.println("PROGRESS " + (1 + 86 * frameCount / maxFrames));
-                                    }
-                                } finally {
-                                    img.close();
                                 }
                             }
                         }
@@ -636,10 +779,14 @@ public class Video2Boot {
         final int frameW, frameH;
         final int sizePct;
         final int xPct, yPct;
+        final int rotateDeg;
+        final long trimStartUs;
+        final long trimEndUs;
         final File frameDir;
         int frameCount = 0;
 
-        GifDecoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, int xPct, int yPct, File frameDir) {
+        GifDecoder(File input, int fps, int maxSeconds, int frameW, int frameH, int sizePct, int xPct, int yPct,
+                int rotateDeg, long trimStartUs, long trimEndUs, File frameDir) {
             this.input = input;
             this.fps = fps;
             this.maxSeconds = maxSeconds;
@@ -648,6 +795,9 @@ public class Video2Boot {
             this.sizePct = sizePct;
             this.xPct = xPct;
             this.yPct = yPct;
+            this.rotateDeg = rotateDeg;
+            this.trimStartUs = trimStartUs;
+            this.trimEndUs = trimEndUs;
             this.frameDir = frameDir;
         }
 
@@ -659,17 +809,26 @@ public class Video2Boot {
             if (gw <= 0 || gh <= 0) throw new IOException("bad GIF size");
             int duration = movie.duration();
             if (duration <= 0) duration = maxSeconds * 1000;
-            System.out.println("INFO gif=" + gw + "x" + gh + " durationMs=" + duration);
+            System.out.println("INFO gif=" + gw + "x" + gh + " durationMs=" + duration
+                    + " rotate=" + rotateDeg + "deg trim=" + (trimStartUs / 1e6) + "-" + (trimEndUs / 1e6) + "s");
 
             int maxFrames = Math.min(MAX_FRAMES, fps * maxSeconds);
+            if (trimEndUs > trimStartUs && trimEndUs > 0) {
+                maxFrames = Math.min(maxFrames, Math.max(1, (int) Math.ceil((trimEndUs - trimStartUs) * fps / 1e6)));
+            }
+            int startMs = (int) (trimStartUs / 1000);
+            int endMs = (int) ((trimEndUs + 999) / 1000);
             int stepMs = Math.max(1, 1000 / fps);
             for (int t = 0; t < duration && frameCount < maxFrames; t += stepMs) {
+                // 截取視窗：視窗之前的幀直接丟棄，到達結束時間即完成
+                if (t < startMs) continue;
+                if (trimEndUs > 0 && t >= endMs) break;
                 Bitmap b = Bitmap.createBitmap(gw, gh, Bitmap.Config.ARGB_8888);
                 Canvas c = new Canvas(b);
                 c.drawColor(Color.BLACK);
                 movie.setTime(t);
                 movie.draw(c, 0f, 0f);
-                Bitmap framed = placeFrame(b, frameW, frameH, sizePct, xPct, yPct);
+                Bitmap framed = placeFrame(b, frameW, frameH, sizePct, xPct, yPct, rotateDeg);
                 b.recycle();
                 writeJpeg(framed, new File(frameDir, String.format("%04d.jpg", frameCount + 1)));
                 framed.recycle();
