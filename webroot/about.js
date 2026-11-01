@@ -228,7 +228,7 @@ function initializePaymentPreview() {
   const preview = document.querySelector("#payment-preview");
   if (!preview) return;
 
-  const confirmation = document.querySelector("#donate-confirm");
+  const confirmation = document.querySelector("#donate-confirm-dialog");
   let pendingTrigger = null;
 
   const image = preview.querySelector("img");
@@ -243,13 +243,12 @@ function initializePaymentPreview() {
     preview.querySelector(".payment-preview-close").focus();
   };
   const closeConfirmation = () => {
-    confirmation.hidden = true;
+    confirmation.open = false;
     pendingTrigger = null;
   };
   const requestConfirmation = (trigger) => {
     pendingTrigger = trigger;
-    confirmation.hidden = false;
-    confirmation.querySelector(".donate-confirm-accept").focus();
+    confirmation.open = true;
   };
 
   document.querySelectorAll("[data-payment-preview]").forEach((button) => {
@@ -258,17 +257,17 @@ function initializePaymentPreview() {
   preview.querySelectorAll(".payment-preview-backdrop, .payment-preview-close").forEach((button) => {
     button.addEventListener("click", close);
   });
-  confirmation.querySelectorAll(".donate-confirm-backdrop, .donate-confirm-cancel").forEach((button) => {
-    button.addEventListener("click", closeConfirmation);
-  });
-  confirmation.querySelector(".donate-confirm-accept").addEventListener("click", () => {
+  confirmation.querySelector("#donate-confirm-cancel").addEventListener("click", closeConfirmation);
+  confirmation.querySelector("#donate-confirm-accept").addEventListener("click", () => {
     const trigger = pendingTrigger;
     closeConfirmation();
     if (trigger) open(trigger);
   });
+  confirmation.addEventListener("close", () => {
+    pendingTrigger = null;
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !preview.hidden) close();
-    else if (event.key === "Escape" && !confirmation.hidden) closeConfirmation();
   });
 }
 

@@ -1,7 +1,12 @@
+/* ============================================================
+   開機動畫 for ColorOS — Material Design 3 page styles
+   Colors: mdui MD3 roles (dynamic color via MaterialKolor)
+   Shape / type / motion: tokens.css (--md-sys-*)
+   ============================================================ */
+
 :root {
-  font-family: Roboto, "Noto Sans SC", system-ui, sans-serif;
-  --card-shape: 35px;
-  --full-shape: 999px;
+  --card-shape: var(--md-sys-shape-corner-medium);
+  --full-shape: var(--md-sys-shape-corner-full);
 }
 
 * {
@@ -12,36 +17,41 @@ body {
   margin: 0;
   min-width: 280px;
   min-height: 100vh;
-  background: rgb(var(--mdui-color-surface-container));
+  background: rgb(var(--mdui-color-surface));
   color: rgb(var(--mdui-color-on-surface));
 }
 
+/* ---------------- Top app bar (MD3 small) ---------------- */
+
 mdui-top-app-bar {
   align-items: center;
-  height: calc(48px + env(safe-area-inset-top));
-  padding: calc(4px + env(safe-area-inset-top)) 8px 4px;
-  background-color: rgb(var(--mdui-color-surface-container));
+  height: calc(64px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 4px 0;
+  background-color: rgb(var(--mdui-color-surface));
 }
 
 mdui-top-app-bar-title {
-  font-weight: 500;
+  font: var(--md-sys-typescale-title-large);
+  letter-spacing: 0;
   opacity: 0;
-  transform: translateY(8px) scale(0.94);
+  transform: translateY(6px);
   transform-origin: left center;
   transition:
-    opacity 160ms ease-out,
-    transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-long) var(--md-sys-motion-easing-emphasized-decelerate);
   pointer-events: none;
 }
 
 mdui-top-app-bar-title.title-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
 }
 
 mdui-button-icon {
   --shape-corner: var(--full-shape);
 }
+
+/* ---------------- Icons ---------------- */
 
 .ui-icon,
 .chip-icon {
@@ -56,60 +66,64 @@ mdui-button-icon {
   height: 18px;
 }
 
-main {
-  width: calc(100% - 32px);
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 0 0 calc(24px + env(safe-area-inset-bottom));
+.chevron {
+  display: block;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  color: rgb(var(--mdui-color-on-surface-variant));
 }
 
+/* ---------------- Layout ---------------- */
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+/* Large title (MD3 headline) */
 .large-title {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 104px;
-  padding: 24px 4px 20px;
+  padding: 8px 4px 20px;
 }
 
 .large-title h1 {
   margin: 0;
-  font-size: 32px;
-  font-weight: 500;
-  line-height: 40px;
+  font: var(--md-sys-typescale-headline-large);
   letter-spacing: 0;
 }
 
 .large-title .subtitle {
-  margin: 4px 0 0;
+  max-width: 560px;
+  margin: 8px 0 0;
   color: rgb(var(--mdui-color-on-surface-variant));
-  font-size: 14px;
-  line-height: 20px;
+  font: var(--md-sys-typescale-body-medium);
 }
 
-.author-link {
+/* Author pill */
+.author-pill {
   display: flex;
   align-items: center;
-  width: 100%;
-  min-height: 64px;
   gap: 12px;
-  margin-bottom: 16px;
-  padding: 10px 16px 10px 10px;
+  min-height: 56px;
+  margin-top: 20px;
+  padding: 8px 16px 8px 8px;
   border-radius: var(--full-shape);
   background: rgb(var(--mdui-color-primary));
   color: rgb(var(--mdui-color-on-primary));
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
   transition:
-    box-shadow 180ms ease-out,
-    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    filter var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
 
-.github-avatar {
+.author-avatar {
   display: block;
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  border: 2px solid rgba(var(--mdui-color-on-primary), 0.7);
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -117,10 +131,7 @@ main {
 .author-id {
   min-width: 0;
   overflow: hidden;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 24px;
-  letter-spacing: 0;
+  font: var(--md-sys-typescale-title-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -134,35 +145,31 @@ main {
   fill: currentColor;
 }
 
-.author-link:active {
-  transform: scale(0.985);
+.author-pill:active {
+  transform: scale(0.98);
 }
 
-.controls {
-  margin-bottom: 20px;
-}
+/* ---------------- Status chips ---------------- */
 
-.state-row {
+.status-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin: 4px 0 16px;
 }
 
-mdui-chip,
-mdui-button {
+.status-chip {
   --shape-corner: var(--full-shape);
-}
-
-#bridge-chip,
-#converting-chip,
-#installed-chip {
+  height: auto;
+  min-height: 32px;
+  padding-block: 6px;
   border: 0;
   cursor: default;
   pointer-events: none;
 }
 
 #bridge-chip {
-  background-color: rgb(var(--mdui-color-surface-container-highest));
+  background-color: rgb(var(--mdui-color-surface-container-high));
   color: rgb(var(--mdui-color-on-surface-variant));
 }
 
@@ -202,151 +209,133 @@ mdui-button {
   color: rgb(var(--mdui-color-error));
 }
 
-h2,
-p {
-  overflow-wrap: anywhere;
-}
+/* ---------------- Cards ---------------- */
 
-h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 24px;
-  letter-spacing: 0;
-}
-
-.upload-section,
-.current-section {
-  display: block;
-}
-
-.upload-card,
-.current-card,
-.system-card,
-.message-card {
+.section-card {
   --shape-corner: var(--card-shape);
   display: block;
   width: 100%;
+  margin-bottom: 12px;
   padding: 0;
   border: 0;
-  background: rgb(var(--mdui-color-surface-container-low));
+  background: rgb(var(--mdui-color-surface-container));
   box-shadow: none;
+  transition: background-color var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
 
-.list-item {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  grid-template-areas:
-    "icon copy chip"
-    "icon copy action";
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  min-height: 140px;
-  gap: 8px 16px;
-  padding: 24px;
-  border-radius: var(--card-shape);
-  background: rgb(var(--mdui-color-surface-container-low));
+  gap: 12px 16px;
+  padding: 16px;
 }
 
-.leading-icon {
-  grid-area: icon;
+.section-icon {
   display: grid;
   place-items: center;
+  flex: 0 0 auto;
   width: 40px;
   height: 40px;
-  border-radius: 14px;
+  border-radius: var(--md-sys-shape-corner-medium);
   background: rgb(var(--mdui-color-primary-container));
   color: rgb(var(--mdui-color-on-primary-container));
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1;
 }
 
-.leading-icon .ui-icon {
-  width: 23px;
-  height: 23px;
+.section-icon.accent-tertiary {
+  background: rgb(var(--mdui-color-tertiary-container));
+  color: rgb(var(--mdui-color-on-tertiary-container));
 }
 
-.item-copy {
-  grid-area: copy;
+.section-icon .ui-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.section-copy {
+  flex: 1 1 140px;
   min-width: 0;
 }
 
-.meta-text {
-  margin: 4px 0 0;
-  color: rgb(var(--mdui-color-on-surface-variant));
-  font-size: 13px;
-  line-height: 18px;
+.section-copy h2 {
+  margin: 0;
+  font: var(--md-sys-typescale-title-medium);
   letter-spacing: 0;
 }
 
-.select-button {
-  grid-area: action;
+.supporting {
+  margin: 2px 0 0;
+  color: rgb(var(--mdui-color-on-surface-variant));
+  font: var(--md-sys-typescale-body-medium);
+  overflow-wrap: anywhere;
 }
 
-/* 上傳卡片：按鈕移到下一行右側，描述文字不再被擠窄 */
-.list-item.upload-item {
-  grid-template-columns: 40px minmax(0, 1fr);
-  grid-template-areas:
-    "icon copy"
-    ". action";
-  align-content: center;
-  row-gap: 6px;
+.section-head > mdui-button {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
-.list-item.upload-item .select-button {
-  justify-self: end;
+mdui-divider.inset {
+  margin: 0 16px;
 }
 
-/* 上傳選項 */
-.option-grid {
-  display: grid;
-  gap: 8px;
-  padding: 0 24px 20px;
+/* ---------------- Options (label + MD3 slider) ---------------- */
+
+.options {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 16px 12px;
 }
 
 .option-row {
+  padding: 10px 0;
+}
+
+.option-row.hidden {
+  display: none !important;
+}
+
+.option-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-height: 44px;
+  gap: 12px;
+  min-height: 32px;
 }
 
-.option-row > span {
-  flex: 0 0 auto;
-  font-size: 14px;
-  line-height: 20px;
+.option-label {
+  flex: 1 1 auto;
+  min-width: 0;
   color: rgb(var(--mdui-color-on-surface-variant));
+  font: var(--md-sys-typescale-body-medium);
 }
 
-.option-control {
+.option-value {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.option-control input[type="range"] {
-  flex: 1 1 auto;
-  min-width: 64px;
-  max-width: 150px;
-  accent-color: rgb(var(--mdui-color-primary));
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .option-number {
-  flex: 0 0 auto;
-  width: 62px;
-  padding: 4px 6px;
-  border: 1px solid rgb(var(--mdui-color-outline-variant));
-  border-radius: 10px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  width: 68px;
+  height: 40px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: rgb(var(--mdui-color-surface-container-highest));
+  color: rgb(var(--mdui-color-on-surface));
+  font: var(--md-sys-typescale-label-large);
   font-variant-numeric: tabular-nums;
   text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.option-number::-webkit-outer-spin-button,
+.option-number::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
 }
 
 .option-number:focus-visible {
@@ -355,307 +344,44 @@ h2 {
 }
 
 .option-unit {
-  flex: 0 0 auto;
-  min-width: 16px;
-  font-size: 12px;
+  min-width: 18px;
   color: rgb(var(--mdui-color-on-surface-variant));
+  font: var(--md-sys-typescale-body-small);
+}
+
+.option-row m3-slider {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.option-control {
+  padding-top: 8px;
+}
+
+.option-control mdui-segmented-button-group {
+  display: flex;
+  width: 100%;
+}
+
+.option-control mdui-segmented-button {
+  flex: 1 1 0;
 }
 
 .option-control mdui-text-field {
-  width: 160px;
-}
-
-.convert-progress {
-  display: block;
-  width: calc(100% - 48px);
-  margin: 0 24px 16px;
-}
-
-.convert-button {
-  width: calc(100% - 48px);
-  height: 48px;
-  margin: 0 24px 24px;
-}
-
-/* 當前動畫卡片 */
-.current-section {
-  margin-top: 16px;
-}
-
-.current-heading {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  grid-template-areas: "icon copy action";
-  align-items: center;
-  min-height: 88px;
-  gap: 16px;
-  padding: 20px 24px;
-  border-radius: var(--card-shape);
-  background: rgb(var(--mdui-color-surface-container-low));
-}
-
-.preview-wrap {
-  display: block;
-  margin: 0 24px 24px;
-  border-radius: 20px;
-  overflow: hidden;
-  background: #000;
-}
-
-.preview-img {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 420px;
-  object-fit: contain;
-}
-
-/* 系統卡片 */
-.system-card {
-  margin-top: 16px;
-}
-
-.system-item {
-  grid-template-areas: "icon copy action";
-  min-height: 88px;
-}
-
-/* 錯誤卡片 */
-.message-card {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 12px;
-  padding: 20px 24px;
-  background: rgb(var(--mdui-color-error-container));
-  color: rgb(var(--mdui-color-on-error-container));
-}
-
-.message-icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  background: rgba(var(--mdui-color-on-error-container), 0.08);
-}
-
-.message-copy p {
-  margin: 3px 0 0;
-  font-size: 13px;
-  line-height: 18px;
-  letter-spacing: 0;
-}
-
-/* 路徑導入 */
-.path-import {
-  padding: 0 0 8px;
-}
-
-.path-import-hint {
-  margin: 0 0 14px;
-  color: rgb(var(--mdui-color-on-surface-variant));
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.path-input {
   width: 100%;
 }
 
-footer {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px 0 0;
-  color: rgb(var(--mdui-color-on-surface-variant));
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-  letter-spacing: 0;
-}
+/* ---------------- Preview ---------------- */
 
-.hidden {
-  display: none !important;
-}
-
-@media (hover: hover) {
-  .author-link:hover {
-    box-shadow: 0 5px 16px rgba(var(--mdui-color-primary), 0.28);
-  }
-
-  .upload-card:hover,
-  .current-card:hover,
-  .system-card:hover {
-    background: rgb(var(--mdui-color-surface-container-low));
-  }
-}
-
-/* 原始碼儲存庫卡片 */
-.source-link {
-  display: block;
-  margin-top: 16px;
-  color: inherit;
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.source-card {
-  --shape-corner: var(--card-shape);
-  display: block;
-  width: 100%;
-  border: 0;
-  background: rgb(var(--mdui-color-surface-container-low));
-  box-shadow: none;
-}
-
-.source-content {
-  display: flex;
-  align-items: center;
-  min-height: 96px;
-  gap: 16px;
-  padding: 20px 24px;
-}
-
-.source-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  background: rgb(var(--mdui-color-primary-container));
-  color: rgb(var(--mdui-color-on-primary-container));
-}
-
-.source-icon .ui-icon {
-  width: 22px;
-  height: 22px;
-}
-
-.source-copy {
-  min-width: 0;
-}
-
-.source-copy p {
-  margin: 3px 0 0;
-  color: rgb(var(--mdui-color-on-surface-variant));
-  font-size: 13px;
-  line-height: 18px;
-  letter-spacing: 0;
-  overflow-wrap: anywhere;
-}
-
-.source-arrow {
-  display: block;
-  flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
-  margin-left: auto;
-  fill: currentColor;
-  color: rgb(var(--mdui-color-on-surface-variant));
-}
-
-/* 關於 / 贊助作者卡片 */
-.resource-link {
-  display: block;
-  margin-top: 12px;
-  color: inherit;
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.resource-card {
-  --shape-corner: var(--card-shape);
-  display: block;
-  width: 100%;
-  border: 0;
-  background: rgb(var(--mdui-color-surface-container-low));
-  box-shadow: none;
-}
-
-.resource-content {
-  display: flex;
-  align-items: center;
-  min-height: 92px;
-  gap: 16px;
-  padding: 18px 24px;
-}
-
-.resource-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-}
-
-.resource-icon .ui-icon {
-  width: 22px;
-  height: 22px;
-}
-
-.about-card .resource-icon {
-  background: rgb(var(--mdui-color-tertiary-container));
-  color: rgb(var(--mdui-color-on-tertiary-container));
-}
-
-.donate-card .resource-icon {
-  background: rgb(var(--mdui-color-primary-fixed));
-  color: rgb(var(--mdui-color-on-primary-fixed));
-}
-
-.resource-copy {
-  min-width: 0;
-}
-
-.resource-copy p {
-  margin: 3px 0 0;
-  color: rgb(var(--mdui-color-on-surface-variant));
-  font-size: 13px;
-  line-height: 18px;
-  letter-spacing: 0;
-  overflow-wrap: anywhere;
-}
-
-.resource-arrow {
-  display: block;
-  flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
-  margin-left: auto;
-  fill: currentColor;
-  color: rgb(var(--mdui-color-on-surface-variant));
-}
-
-.source-link:active,
-.resource-link:active {
-  transform: scale(0.985);
-}
-
-@media (hover: hover) {
-  .source-link:hover .source-card {
-    background: rgb(var(--mdui-color-surface-container));
-  }
-
-  .resource-link:hover .resource-card {
-    background: rgb(var(--mdui-color-surface-container));
-  }
-}
-
-/* 上傳預覽 */
-.upload-preview-wrap {
-  margin: 0 24px 16px;
+.preview-block {
+  margin: 4px 16px 16px;
 }
 
 .upload-preview-screen {
   position: relative;
   margin: 0 auto;
-  border-radius: 18px;
+  border-radius: var(--md-sys-shape-corner-medium);
   background: #000;
   overflow: hidden;
 }
@@ -674,10 +400,120 @@ footer {
   object-fit: contain;
 }
 
-.upload-preview-hint {
+.preview-hint {
   margin: 10px 0 0;
   color: rgb(var(--mdui-color-on-surface-variant));
-  font-size: 12px;
-  line-height: 17px;
+  font: var(--md-sys-typescale-body-small);
   text-align: center;
+}
+
+.preview-img {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: #000;
+  object-fit: contain;
+}
+
+/* ---------------- Progress & actions ---------------- */
+
+.convert-progress {
+  display: block;
+  margin: 4px 16px 0;
+}
+
+.card-actions {
+  padding: 12px 16px 16px;
+}
+
+.card-actions mdui-button {
+  display: block;
+  width: 100%;
+  height: 48px;
+}
+
+/* ---------------- Error ---------------- */
+
+.error-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding: 16px;
+  border-radius: var(--card-shape);
+  background: rgb(var(--mdui-color-error-container));
+  color: rgb(var(--mdui-color-on-error-container));
+}
+
+.error-card .section-icon {
+  background: rgba(var(--mdui-color-on-error-container), 0.12);
+  color: inherit;
+}
+
+.error-card .section-copy h2 {
+  margin: 0;
+  font: var(--md-sys-typescale-title-medium);
+}
+
+.error-card .section-copy p {
+  margin: 2px 0 0;
+  font: var(--md-sys-typescale-body-medium);
+}
+
+/* ---------------- Link cards ---------------- */
+
+.card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+}
+
+.card-link .section-head {
+  padding: 16px;
+}
+
+.card-link:active {
+  transform: scale(0.99);
+}
+
+/* ---------------- Footer ---------------- */
+
+footer {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 0 0;
+  color: rgb(var(--mdui-color-on-surface-variant));
+  font: var(--md-sys-typescale-label-small);
+}
+
+/* ---------------- Dialog extras ---------------- */
+
+.path-import {
+  padding-bottom: 8px;
+}
+
+.path-import-hint {
+  margin: 0 0 16px;
+  color: rgb(var(--mdui-color-on-surface-variant));
+  font: var(--md-sys-typescale-body-medium);
+}
+
+/* ---------------- Utility ---------------- */
+
+.hidden {
+  display: none !important;
+}
+
+@media (hover: hover) {
+  .card-link:hover .section-card {
+    background: rgb(var(--mdui-color-surface-container-high));
+  }
+
+  .author-pill:hover {
+    filter: brightness(1.05);
+  }
 }

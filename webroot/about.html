@@ -6,11 +6,12 @@
     <meta name="color-scheme" content="light dark">
     <title>README</title>
     <link rel="stylesheet" href="vendor/mdui.css">
-    <link rel="stylesheet" href="about.css?v=172">
+    <link rel="stylesheet" href="tokens.css?v=177">
+    <link rel="stylesheet" href="about.css?v=177">
     <script src="vendor/mdui.global.js"></script>
     <script src="vendor/material-kolor.js"></script>
-    <script src="theme-cache.js?v=172"></script>
-    <script src="about.js?v=172" defer></script>
+    <script src="theme-cache.js?v=177"></script>
+    <script src="about.js?v=177" defer></script>
   </head>
   <body>
     <mdui-top-app-bar variant="small">
@@ -21,18 +22,18 @@
     </mdui-top-app-bar>
 
     <main>
-      <header class="about-header">
-        <p class="version-label">開機動畫 for ColorOS · v1.8.2</p>
+      <header class="page-header">
+        <p class="version-label">開機動畫 for ColorOS · v1.8.3</p>
         <h1>開機動畫 for ColorOS</h1>
-        <p class="about-lead" data-i18n="overview">適用於 ColorOS / realme UI / OxygenOS 的開機動畫模組：上傳影片或 GIF，自動轉換為水平居中、位於上黃金分割點的開機動畫。</p>
-        <a class="about-author" href="https://github.com/yuzlyn" target="_blank" rel="noopener noreferrer" aria-label="前往 yuzlyn 的 GitHub 個人頁面" data-i18n-aria-label="authorLinkLabel">
+        <p class="lead" data-i18n="overview">適用於 ColorOS / realme UI / OxygenOS 的開機動畫模組：上傳影片或 GIF，自動轉換為水平居中、位於上黃金分割點的開機動畫。</p>
+        <a class="author-pill" href="https://github.com/yuzlyn" target="_blank" rel="noopener noreferrer" aria-label="前往 yuzlyn 的 GitHub 個人頁面" data-i18n-aria-label="authorLinkLabel">
           <img src="assets/yuzlyn-github.png" alt="yuzlyn 的 GitHub 大頭貼" data-i18n-alt="authorAvatarAlt">
           <span>@yuzlyn</span>
         </a>
       </header>
 
       <article aria-label="模組 README" data-i18n-aria-label="readmeLabel">
-        <section class="readme-section">
+        <section class="info-card">
           <h2 data-i18n="compatibilityTitle">相容範圍</h2>
           <ul>
             <li data-i18n="compatibilityAndroid">Android 8.0 及以上版本（API 26+）。</li>
@@ -41,7 +42,7 @@
           </ul>
         </section>
 
-        <section class="readme-section">
+        <section class="info-card">
           <h2 data-i18n="featuresTitle">功能</h2>
           <ul>
             <li data-i18n="featureUpload">在 WebUI 上傳影片或 GIF，自動轉換為開機動畫。</li>
@@ -58,19 +59,19 @@
           </ul>
         </section>
 
-        <section class="readme-section">
+        <section class="info-card">
           <h2 data-i18n="workingTitle">工作方式</h2>
           <p data-i18n="workingText">轉換器將影片/GIF 解碼為逐幀 JPEG，打包為 ColorOS 格式的 bootanimation.zip，由模組掛載替換系統開機動畫；僅替換開機動畫，不影響關機動畫，不直接修改系統分區。</p>
         </section>
 
-        <section class="readme-section">
+        <section class="info-card">
           <h2 data-i18n="recoveryTitle">故障恢復</h2>
           <p data-i18n="recoveryText">如果開機動畫無法顯示或系統啟動異常，請在 KernelSU / Magisk 中停用模組並重新啟動。保留 adb root 時也可以執行：</p>
           <pre><code>adb shell su -c 'touch /data/adb/modules/coloros-bootanimation/disable'
 adb reboot</code></pre>
         </section>
 
-        <section class="readme-section">
+        <section class="info-card">
           <h2 data-i18n="linksTitle">相關連結</h2>
           <nav class="readme-links" aria-label="專案連結" data-i18n-aria-label="projectLinksLabel">
             <a href="https://github.com/yuzlyn/boot_animation_for_coloros16" target="_blank" rel="noopener noreferrer" data-i18n="sourceRepository">原始碼儲存庫</a>
@@ -78,7 +79,7 @@ adb reboot</code></pre>
         </section>
       </article>
 
-      <footer>v1.8.2 · yuzlyn</footer>
+      <footer>v1.8.3 · yuzlyn</footer>
     </main>
   </body>
 </html>

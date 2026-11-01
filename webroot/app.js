@@ -465,7 +465,7 @@ function numberToSlider(number, slider) {
   let snapped = clampTrim(value, min, max);
   snapped = min + Math.round((snapped - min) / step) * step;
   snapped = clampTrim(snapped, min, max);
-  slider.value = String(snapped);
+  slider.setAttribute("value", String(snapped));
   return true;
 }
 
@@ -484,7 +484,7 @@ function speedToSlider() {
   let pct = clampTrim(rate * 100, 25, 400);
   pct = 25 + Math.round((pct - 25) / 25) * 25;
   pct = clampTrim(pct, 25, 400);
-  speedSlider.value = String(pct);
+  speedSlider.setAttribute("value", String(pct));
 }
 
 function updateTrimBounds() {
@@ -493,12 +493,12 @@ function updateTrimBounds() {
   const step = Number(trimEndSlider.step) || 0.5;
   const start = clampTrim(Number(trimStartSlider.value) || 0, 0, Math.max(0, dur - step));
   const end = clampTrim(Number(trimEndSlider.value) || dur, Math.min(dur, start + step), dur);
-  trimStartSlider.value = String(start);
-  trimEndSlider.value = String(end);
-  trimStartSlider.min = "0";
-  trimStartSlider.max = String(Math.max(0, end - step));
-  trimEndSlider.min = String(Math.min(dur, start + step));
-  trimEndSlider.max = String(dur);
+  trimStartSlider.setAttribute("value", String(start));
+  trimEndSlider.setAttribute("value", String(end));
+  trimStartSlider.setAttribute("min", "0");
+  trimStartSlider.setAttribute("max", String(Math.max(0, end - step)));
+  trimEndSlider.setAttribute("min", String(Math.min(dur, start + step)));
+  trimEndSlider.setAttribute("max", String(dur));
   // 同步數值輸入框（範圍/步進/顯示值）
   for (const [number, slider] of [[trimStartNumber, trimStartSlider], [trimEndNumber, trimEndSlider]]) {
     number.min = slider.min;
@@ -516,10 +516,10 @@ function enableTrimControls(duration) {
   trimDuration = dur > 0 ? dur : TRIM_FALLBACK_SEC; // 未知時用保守上限，仍可拖動截取
   const upper = trimDuration;
   const step = upper > 1800 ? 10 : upper > 600 ? 5 : upper > 120 ? 1 : 0.5;
-  trimStartSlider.step = String(step);
-  trimEndSlider.step = String(step);
-  trimStartSlider.value = "0";
-  trimEndSlider.value = String(upper); // 預設至上限（視為不截取）
+  trimStartSlider.setAttribute("step", String(step));
+  trimEndSlider.setAttribute("step", String(step));
+  trimStartSlider.setAttribute("value", "0");
+  trimEndSlider.setAttribute("value", String(upper)); // 預設至上限（視為不截取）
   trimReady = true;
   trimStartRow.classList.remove("hidden");
   trimEndRow.classList.remove("hidden");
@@ -531,8 +531,8 @@ function disableTrimControls() {
   trimDuration = 0;
   trimStartRow.classList.add("hidden");
   trimEndRow.classList.add("hidden");
-  trimStartSlider.value = "0";
-  trimEndSlider.value = "0";
+  trimStartSlider.setAttribute("value", "0");
+  trimEndSlider.setAttribute("value", "0");
   trimStartNumber.value = "0";
   trimEndNumber.value = "0";
 }

@@ -1,0 +1,52 @@
+/* ============================================================
+   Material Design 3 — design tokens
+   Color roles come from mdui (--mdui-color-*) plus MaterialKolor
+   dynamic color; they map 1:1 to the MD3 color system.
+   ============================================================ */
+
+:root {
+  font-family: Roboto, "Noto Sans SC", system-ui, sans-serif;
+
+  /* ---- Shape ---- */
+  --md-sys-shape-corner-none: 0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* ---- Spacing (8dp grid) ---- */
+  --md-sys-spacing-1: 4px;
+  --md-sys-spacing-2: 8px;
+  --md-sys-spacing-3: 12px;
+  --md-sys-spacing-4: 16px;
+  --md-sys-spacing-5: 20px;
+  --md-sys-spacing-6: 24px;
+  --md-sys-spacing-8: 32px;
+
+  /* ---- Type scale (font: weight size/line-height family) ---- */
+  --md-sys-typescale-headline-large: 400 32px/40px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-headline-medium: 400 28px/36px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-title-large: 400 22px/28px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-title-medium: 500 16px/24px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-title-small: 500 14px/20px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-body-large: 400 16px/24px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-body-medium: 400 14px/20px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-body-small: 400 12px/16px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-label-large: 500 14px/20px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-label-medium: 500 12px/16px Roboto, "Noto Sans SC", system-ui, sans-serif;
+  --md-sys-typescale-label-small: 500 11px/16px Roboto, "Noto Sans SC", system-ui, sans-serif;
+
+  /* ---- Motion (MD3) ---- */
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --md-sys-motion-duration-short: 200ms;
+  --md-sys-motion-duration-medium: 300ms;
+  --md-sys-motion-duration-long: 400ms;
+  --md-sys-motion-duration-extra-long: 500ms;
+}

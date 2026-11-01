@@ -38,6 +38,7 @@
 - 可自訂水平與垂直位置，或使用預設的居中上黃金分割點。
 - 可調幀率（10–60 fps）、時長上限與輸出尺寸。
 - WebUI 支援簡體中文、台灣繁體中文與英文。
+- WebUI 採用 Material Design 3：M3 Expressive 滑桿、MD3 對話框與動態取色。
 - 內建關於頁面與贊助作者頁面。
 
 ### 工作方式
@@ -55,6 +56,7 @@ adb reboot
 ```
 
 ### 版本歷史
+- **v1.8.3** — WebUI 全面改用 Material Design 3：M3 Expressive 滑桿（16dp 軌道、4×44dp 膠囊手柄、數值氣泡）、MD3 對話框與分段按鈕、統一 design token 與動效；修正深色模式對比度與二維碼預覽尺寸
 - **v1.8.2** — GIF 與總時長未知的影片也能使用截取；probe 可回報 GIF 總時長
 - **v1.8.1** — 旋轉範圍擴至 0–360°；所有參數滑桿皆可直接輸入數值
 - **v1.8.0** — 新增影片旋轉（0–360°，可斜放）與影片截取（選取開始 / 結束時間）；WebUI 即時預覽旋轉效果
@@ -99,6 +101,7 @@ adb reboot
 - 可自定义水平与垂直位置，或使用默认的居中上黄金分割点。
 - 可调帧率（10–60 fps）、时长上限与输出尺寸。
 - WebUI 支持简体中文、台湾繁体中文和英文。
+- WebUI 采用 Material Design 3：M3 Expressive 滑杆、MD3 对话框与动态取色。
 - 内置关于页面与赞助作者页面。
 
 ### 工作方式
@@ -116,6 +119,7 @@ adb reboot
 ```
 
 ### 版本历史
+- **v1.8.3** — WebUI 全面改用 Material Design 3：M3 Expressive 滑杆（16dp 轨道、4×44dp 胶囊手柄、数值气泡）、MD3 对话框与分段按钮、统一 design token 与动效；修正深色模式对比度与二维码预览尺寸
 - **v1.8.2** — GIF 与总时长未知的视频也能使用截取；probe 可回报 GIF 总时长
 - **v1.8.1** — 旋转范围扩至 0–360°；所有参数滑块皆可直接输入数值
 - **v1.8.0** — 新增视频旋转（0–360°，可斜放）与视频截取（选择开始 / 结束时间）；WebUI 即时预览旋转效果
@@ -160,6 +164,7 @@ A ColorOS / realme UI / OxygenOS boot animation module: upload a video or GIF in
 - Custom horizontal and vertical position, or the default centered upper golden-ratio point.
 - Adjustable frame rate (10–60 fps), duration cap, and output size.
 - WebUI languages: Simplified Chinese, Traditional Chinese for Taiwan, and English.
+- WebUI built on Material Design 3 with M3 Expressive sliders, MD3 dialogs, and dynamic color.
 - Built-in About and donation pages.
 
 ### How it works
@@ -177,6 +182,7 @@ adb reboot
 ```
 
 ### Version history
+- **v1.8.3** — WebUI rebuilt on Material Design 3: M3 Expressive sliders (16dp track, 4×44dp pill handle, value bubble), MD3 dialogs and segmented buttons, unified design tokens and motion; dark-mode contrast and QR preview sizing fixes
 - **v1.8.2** — Clipping now also works for GIFs and videos with unknown duration; probe reports GIF duration
 - **v1.8.1** — Rotation range widened to 0-360°; every parameter slider now accepts typed values
 - **v1.8.0** — Video rotation (0-360°, tilt it) and video clipping (pick a start/end time); live rotation preview in the WebUI
