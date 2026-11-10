@@ -56,6 +56,7 @@ adb reboot
 ```
 
 ### 版本歷史
+- **v1.9.0** — 適配 ColorOS 17（Android 17）：確認開機動畫仍取自 `/my_product/media/bootanimation/`，掛載失敗或缺檔時自動回退到 `/data/local/bootanimation.zip`；截取區間超出素材時長會直接提示並修正，不再拋出 `no frames decoded` 的轉換失敗
 - **v1.8.3** — WebUI 全面改用 Material Design 3：M3 Expressive 滑桿（16dp 軌道、4×44dp 膠囊手柄、數值氣泡）、MD3 對話框與分段按鈕、統一 design token 與動效；修正深色模式對比度與二維碼預覽尺寸
 - **v1.8.2** — GIF 與總時長未知的影片也能使用截取；probe 可回報 GIF 總時長
 - **v1.8.1** — 旋轉範圍擴至 0–360°；所有參數滑桿皆可直接輸入數值
@@ -119,6 +120,7 @@ adb reboot
 ```
 
 ### 版本历史
+- **v1.9.0** — 适配 ColorOS 17（Android 17）：确认开机动画仍取自 `/my_product/media/bootanimation/`，挂载失败或缺档时自动回退到 `/data/local/bootanimation.zip`；截取区间超出素材时长会直接提示并修正，不再抛出 `no frames decoded` 的转换失败
 - **v1.8.3** — WebUI 全面改用 Material Design 3：M3 Expressive 滑杆（16dp 轨道、4×44dp 胶囊手柄、数值气泡）、MD3 对话框与分段按钮、统一 design token 与动效；修正深色模式对比度与二维码预览尺寸
 - **v1.8.2** — GIF 与总时长未知的视频也能使用截取；probe 可回报 GIF 总时长
 - **v1.8.1** — 旋转范围扩至 0–360°；所有参数滑块皆可直接输入数值
@@ -182,7 +184,8 @@ adb reboot
 ```
 
 ### Version history
-- **v1.8.3** — WebUI rebuilt on Material Design 3: M3 Expressive sliders (16dp track, 4×44dp pill handle, value bubble), MD3 dialogs and segmented buttons, unified design tokens and motion; dark-mode contrast and QR preview sizing fixes
+- **v1.9.0** — ColorOS 17 (Android 17) support: the boot animation still comes from `/my_product/media/bootanimation/`, and the module now falls back to `/data/local/bootanimation.zip` when the stock file is missing or the bind mount fails; trim ranges longer than the source clip are clamped or rejected with a clear message instead of failing with `no frames decoded`
+- **v1.8.3** — WebUI rebuilt on Material Design 3: M3 Expressive sliders (16dp track, 4×44dp pill handle, value bubble), MD3 dialogs and segmented buttons, unified design tokens and motion; dark-mode contrast and preview sizing fixes
 - **v1.8.2** — Clipping now also works for GIFs and videos with unknown duration; probe reports GIF duration
 - **v1.8.1** — Rotation range widened to 0-360°; every parameter slider now accepts typed values
 - **v1.8.0** — Video rotation (0-360°, tilt it) and video clipping (pick a start/end time); live rotation preview in the WebUI

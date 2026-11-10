@@ -167,6 +167,29 @@ cmd_convert() {
   case "$start" in ''|*[!0-9.]*) start=0 ;; esac
   case "$end" in ''|*[!0-9.]*) end=0 ;; esac
 
+  # 截取区间必须落在素材时长内：起点超出时长时解码器会一帧都取不到，
+  # 之前只会抛出 "no frames decoded from GIF" 这类难以理解的失败。
+  if [ "$start" != "0" ] || [ "$end" != "0" ]; then
+    local duration
+    duration="$(cmd_probe "$video" | sed -n 's/^duration=//p' | head -1)"
+    case "$duration" in
+      ''|*[!0-9.]*) duration=0 ;;
+    esac
+    if [ "$duration" != "0" ]; then
+      if [ "$(awk -v s="$start" -v d="$duration" 'BEGIN{print (s >= d) ? 1 : 0}')" = "1" ]; then
+        echo "ERROR trim_out_of_range"
+        exit 1
+      fi
+      if [ "$end" != "0" ] && [ "$(awk -v e="$end" -v d="$duration" 'BEGIN{print (e > d) ? 1 : 0}')" = "1" ]; then
+        end="$duration"
+      fi
+      if [ "$end" != "0" ] && [ "$(awk -v s="$start" -v e="$end" 'BEGIN{print (s >= e) ? 1 : 0}')" = "1" ]; then
+        echo "ERROR trim_out_of_range"
+        exit 1
+      fi
+    fi
+  fi
+
   # 已有轉換在跑
   if [ "$(get_status converting)" = "1" ]; then
     bgpid="$(get_status pid)"

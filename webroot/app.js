@@ -89,6 +89,7 @@ const TRANSLATIONS = {
     errorConvertTimeout: "转换超时，请尝试更短的视频或降低帧率。",
     errorZipVerify: "生成的动画包校验失败，请重试。",
     errorConverterExited: "转换进程意外退出，请重试。",
+    errorTrimRange: "截取区间超出素材时长，请重新设置起点和终点。",
     errorGeneric: "转换失败（{code}）。",
     convertStarting: "开始转换…",
     uploadingFile: "正在上传文件…",
@@ -189,6 +190,7 @@ const TRANSLATIONS = {
     errorConvertTimeout: "轉換逾時，請嘗試較短的影片或降低幀率。",
     errorZipVerify: "產生的動畫包驗證失敗，請重試。",
     errorConverterExited: "轉換程序意外結束，請重試。",
+    errorTrimRange: "截取區間超出素材長度，請重新設定起點與終點。",
     errorGeneric: "轉換失敗（{code}）。",
     convertStarting: "開始轉換…",
     uploadingFile: "正在上傳檔案…",
@@ -289,6 +291,7 @@ const TRANSLATIONS = {
     errorConvertTimeout: "Conversion timed out. Try a shorter video or a lower frame rate.",
     errorZipVerify: "The generated animation package failed verification. Try again.",
     errorConverterExited: "The converter exited unexpectedly. Try again.",
+    errorTrimRange: "The trim range is longer than the source clip. Set a start and end within the clip.",
     errorGeneric: "Conversion failed ({code}).",
     convertStarting: "Starting conversion…",
     uploadingFile: "Uploading file…",
@@ -749,6 +752,7 @@ function errorMessage(code) {
     case "convert_timeout": return t("errorConvertTimeout");
     case "zip_verify_failed": return t("errorZipVerify");
     case "converter_exited_unexpectedly": return t("errorConverterExited");
+    case "trim_out_of_range": return t("errorTrimRange");
     default: return t("errorGeneric", { code });
   }
 }
