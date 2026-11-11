@@ -1,19 +1,45 @@
 #!/system/bin/sh
+
 # CGI executor for the module's local WebUI server (busybox httpd).
-# Reads a shell command from the POST body, runs it as root, and replies
-# with "<exit code>\n<combined output>". The server binds to 127.0.0.1 only.
+# Runs the requested shell command as root and replies with
+# "<exit code>\n<combined output>". The server binds to 127.0.0.1 only.
+#
+# The command may arrive two ways:
+#   GET  /cgi-bin/exec?b64=<base64 of the command>   <- preferred
+#   POST /cgi-bin/exec   with the command as the body
+# POST bodies are not forwarded by every busybox httpd build and some WebViews
+# never complete the request, so the browser fallback uses the query form.
+#
+# Every invocation is appended to webui.log so a WebUI that "does nothing" can
+# be told apart from one that never reached the server.
+
+LOG="$(dirname "$(dirname "$0")")/webui.log"
 
 printf 'HTTP/1.1 200 OK\r\n'
 printf 'Content-Type: text/plain; charset=utf-8\r\n'
 printf 'Access-Control-Allow-Origin: *\r\n'
 printf 'Cache-Control: no-store\r\n\r\n'
 
-length="${CONTENT_LENGTH:-0}"
-case "$length" in
-  ''|*[!0-9]*) length=0 ;;
-esac
+command=""
 
-command="$(dd bs=1 count="$length" 2>/dev/null)"
+if [ -n "$QUERY_STRING" ]; then
+  case "$QUERY_STRING" in
+    b64=*) command="$(printf '%s' "${QUERY_STRING#b64=}" | base64 -d 2>/dev/null)" ;;
+  esac
+fi
+
+if [ -z "$command" ]; then
+  length="${CONTENT_LENGTH:-0}"
+  case "$length" in
+    ''|*[!0-9]*) length=0 ;;
+  esac
+  if [ "$length" -gt 0 ]; then
+    command="$(dd bs=1 count="$length" 2>/dev/null)"
+  fi
+fi
+
+printf '[%s] qs=%s cmd=%s\n' "$(date '+%m-%d %H:%M:%S')" "${QUERY_STRING%%b64=*}" "$(printf '%s' "$command" | head -c 60)" >> "$LOG" 2>/dev/null
+
 case "$command" in
   *[![:space:]]*) ;;
   *) printf '1\nempty command\n'; exit 0 ;;

@@ -298,6 +298,11 @@ cmd_do_convert() {
   elif unzip -o -q "$tmpzip" "part0/0001.png" -d "$pdir" 2>/dev/null; then
     [ -f "$pdir/part0/0001.png" ] && cp -f "$pdir/part0/0001.png" "$PREVIEW"
   fi
+  # 让 WebUI 直接以静态文件显示预览，避免 base64 往返。
+  if [ -f "$PREVIEW" ]; then
+    cp -f "$PREVIEW" "$MODDIR/webroot/preview.jpg" 2>/dev/null
+    chmod 0644 "$MODDIR/webroot/preview.jpg" 2>/dev/null
+  fi
 
   frames="$(grep '^OK ' "$outfile" 2>/dev/null | tail -1 | awk '{print $2}')"
   [ -z "$frames" ] && frames="-"
@@ -330,7 +335,7 @@ cmd_do_convert() {
 }
 
 cmd_restore() {
-  rm -f "$BOOTZIP" "$PREVIEW" "$STATUS" 2>/dev/null
+  rm -f "$BOOTZIP" "$PREVIEW" "$STATUS" "$MODDIR/webroot/preview.jpg" 2>/dev/null
   log "restored to stock"
   echo "OK restored"
 }
