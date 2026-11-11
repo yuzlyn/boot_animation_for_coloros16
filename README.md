@@ -3,7 +3,7 @@
 [![Release](https://img.shields.io/github/v/release/yuzlyn/boot_animation_for_coloros16?label=release)](https://github.com/yuzlyn/boot_animation_for_coloros16/releases/latest)
 [![License](https://img.shields.io/github/license/yuzlyn/boot_animation_for_coloros16)](LICENSE)
 
-適用於 ColorOS / realme UI / OxygenOS 的開機動畫模組。在 KernelSU / Magisk 的 WebUI 上傳影片或 GIF，自動轉換為開機動畫。
+適用於 ColorOS / realme UI / OxygenOS 的開機動畫模組，**已適配 ColorOS 17（Android 17）**。在 KernelSU / Magisk 的 WebUI 上傳影片或 GIF，自動轉換為開機動畫。
 
 [下載最新版本](https://github.com/yuzlyn/boot_animation_for_coloros16/releases/latest)
 
@@ -13,6 +13,8 @@
 
 ### 簡介
 適用於 ColorOS / realme UI / OxygenOS 的開機動畫模組：上傳影片或 GIF，自動轉換為水平居中、位於上黃金分割點的開機動畫。
+
+**已適配 ColorOS 17（Android 17）**，ColorOS 16 亦完整支援。
 
 ### 安裝
 1. 從 [Releases](https://github.com/yuzlyn/boot_animation_for_coloros16/releases/latest) 下載最新版 zip。
@@ -24,6 +26,7 @@
 - Android 8.0 及以上版本（API 26+）。
 - KernelSU / Magisk，或相容 WebUI 與 systemless 模組掛載的實作。
 - 適用於 ColorOS / realme UI / OxygenOS（OPPO / OnePlus / realme）。
+- **已在 ColorOS 16 與 ColorOS 17（Android 17，一加 13）上實機驗證**；C17 的開機動畫仍取自 `/my_product/media/bootanimation/`，模組會自動偵測並在缺檔時回退。
 
 ### 功能
 - 在 WebUI 上傳影片或 GIF，自動轉換為開機動畫。
@@ -56,6 +59,7 @@ adb reboot
 ```
 
 ### 版本歷史
+- **v2.0.0** — WebUI 改用與字體模組、音效模組同一套 Material 3 模板；修正頁面完全無法滑動、數字輸入框被隱藏、預覽圖破圖與 CGI 無法執行的問題。
 - **v1.9.0** — 適配 ColorOS 17（Android 17）：確認開機動畫仍取自 `/my_product/media/bootanimation/`，掛載失敗或缺檔時自動回退到 `/data/local/bootanimation.zip`；截取區間超出素材時長會直接提示並修正，不再拋出 `no frames decoded` 的轉換失敗
 - **v1.8.3** — WebUI 全面改用 Material Design 3：M3 Expressive 滑桿（16dp 軌道、4×44dp 膠囊手柄、數值氣泡）、MD3 對話框與分段按鈕、統一 design token 與動效；修正深色模式對比度與二維碼預覽尺寸
 - **v1.8.2** — GIF 與總時長未知的影片也能使用截取；probe 可回報 GIF 總時長
@@ -78,6 +82,8 @@ adb reboot
 ### 简介
 适用于 ColorOS / realme UI / OxygenOS 的开机动画模块：上传视频或 GIF，自动转换为水平居中、位于上黄金分割点的开机动画。
 
+**已适配 ColorOS 17（Android 17）**，ColorOS 16 亦完整支持。
+
 ### 安装
 1. 从 [Releases](https://github.com/yuzlyn/boot_animation_for_coloros16/releases/latest) 下载最新版 zip。
 2. 在 KernelSU / Magisk 中刷入模块并重启。
@@ -88,6 +94,7 @@ adb reboot
 - Android 8.0 及以上版本（API 26+）。
 - KernelSU / Magisk，或兼容 WebUI 与 systemless 模块挂载的实现。
 - 适用于 ColorOS / realme UI / OxygenOS（OPPO / OnePlus / realme）。
+- **已在 ColorOS 16 与 ColorOS 17（Android 17，一加 13）上实机验证**；C17 的开机动画仍取自 `/my_product/media/bootanimation/`，模块会自动侦测并在缺档时回退。
 
 ### 功能
 - 在 WebUI 上传视频或 GIF，自动转换为开机动画。
@@ -120,6 +127,7 @@ adb reboot
 ```
 
 ### 版本历史
+- **v2.0.0** — WebUI 改用与字体模块、音效模块同一套 Material 3 模板；修正页面完全无法滑动、数字输入框被隐藏、预览图破图与 CGI 无法执行的问题。
 - **v1.9.0** — 适配 ColorOS 17（Android 17）：确认开机动画仍取自 `/my_product/media/bootanimation/`，挂载失败或缺档时自动回退到 `/data/local/bootanimation.zip`；截取区间超出素材时长会直接提示并修正，不再抛出 `no frames decoded` 的转换失败
 - **v1.8.3** — WebUI 全面改用 Material Design 3：M3 Expressive 滑杆（16dp 轨道、4×44dp 胶囊手柄、数值气泡）、MD3 对话框与分段按钮、统一 design token 与动效；修正深色模式对比度与二维码预览尺寸
 - **v1.8.2** — GIF 与总时长未知的视频也能使用截取；probe 可回报 GIF 总时长
@@ -140,7 +148,7 @@ adb reboot
 ## English (en-US)
 
 ### Overview
-A ColorOS / realme UI / OxygenOS boot animation module: upload a video or GIF in the WebUI and it is converted into a horizontally centered boot animation positioned at the upper golden-ratio point.
+A ColorOS / realme UI / OxygenOS boot animation module, **adapted for ColorOS 17 (Android 17)**; ColorOS 16 is fully supported as well. Upload a video or GIF in the WebUI and it is converted into a horizontally centered boot animation positioned at the upper golden-ratio point.
 
 ### Installation
 1. Download the latest zip from [Releases](https://github.com/yuzlyn/boot_animation_for_coloros16/releases/latest).
@@ -151,6 +159,7 @@ A ColorOS / realme UI / OxygenOS boot animation module: upload a video or GIF in
 ### Compatibility
 - Android 8.0 or later (API 26+).
 - KernelSU / Magisk, or a compatible WebUI and systemless module implementation.
+- Verified on ColorOS 16 and ColorOS 17 (Android 17, OnePlus 13); on C17 the animation still comes from `/my_product/media/bootanimation/`, with automatic fallback when the stock file is missing.
 - ColorOS / realme UI / OxygenOS (OPPO / OnePlus / realme).
 
 ### Features
@@ -184,6 +193,7 @@ adb reboot
 ```
 
 ### Version history
+- **v2.0.0** — WebUI rebuilt on the shared Material 3 template used by the other modules; fixes for a page that could not scroll, hidden numeric inputs, a broken preview and a CGI endpoint that never ran.
 - **v1.9.0** — ColorOS 17 (Android 17) support: the boot animation still comes from `/my_product/media/bootanimation/`, and the module now falls back to `/data/local/bootanimation.zip` when the stock file is missing or the bind mount fails; trim ranges longer than the source clip are clamped or rejected with a clear message instead of failing with `no frames decoded`
 - **v1.8.3** — WebUI rebuilt on Material Design 3: M3 Expressive sliders (16dp track, 4×44dp pill handle, value bubble), MD3 dialogs and segmented buttons, unified design tokens and motion; dark-mode contrast and preview sizing fixes
 - **v1.8.2** — Clipping now also works for GIFs and videos with unknown duration; probe reports GIF duration
